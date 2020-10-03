@@ -1,4 +1,5 @@
-const { session, ipcMain, net } = require('electron');
+const electron = require('electron');
+const ipcMain = electron.ipcMain;
 const { autoUpdater } = require("electron-updater");
 
 // disable auto download

@@ -1,0 +1,10 @@
+# project config
+.git
+.idea
+# depend
+node_modules
+# system env
+.DS_Store
+# build out
+dist
+

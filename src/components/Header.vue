@@ -1,239 +1,179 @@
 <template>
-  <el-header class="container-header option-group active" height="85px">
-    <div class="menu-bar">
-      <div class="menu-bar-content">
-        <div class="menus active">
-          <i class="close fa fa-close"></i>
-          <i class="min fa fa-minus"></i>
-          <i class="max fa fa-unsorted"></i></div>
-        <div class="menu-title active">{{title}}</div>
-        <div class="menu-title">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
+  <div>
+    <div class="title-bar"><span class="title">{{title}}</span></div>
+    <div class="menu-div">
+      <div class="menu-group" v-for="optionsItem in options">
+        <div class="menu-item" v-for="(item,index) in optionsItem" :class="item.active?'clicked':''"
+             @click="menuClick(item,index)">
+          <div class="menu-item-icon" v-if="item.table.indexOf(',')===-1" v-html="getIconDom(item.table)"></div>
+          <div class="menu-item-icon" v-else v-for="icons in item.table.split(',')" v-html="getIconDom(icons)"></div>
+          <span class="menu-item-title">{{item.title}}</span>
+        </div>
       </div>
     </div>
-    <div class="option-items">
-      <el-button v-for="item in options" :key="item.name" v-if="item.type==='core'" type="text"
-                 :slot="item.slot" class="option" @click="item.click">
-        <div class="option-div">
-          <i :class="item.icon"></i>
-          <div class="option-title">{{ item.name }}</div>
-        </div>
-      </el-button>
-    </div>
-    <div class="option-items">
-      <el-button v-for="item in options" :key="item.name" v-if="item.type==='base'" type="text"
-                 class="option">
-        <div class="option-div">
-          <i :class="item.icon"></i>
-          <div class="option-title">{{ item.name }}</div>
-        </div>
-      </el-button>
-    </div>
-    <div class="option-items">
-      <el-button v-for="item in options" :key="item.name" v-if="item.type==='views'" type="text"
-                 class="option">
-        <div class="option-div">
-          <i :class="item.icon"></i>
-          <div class="option-title">{{ item.name }}</div>
-        </div>
-      </el-button>
-    </div>
-    <div class="option-items">
-      <el-button v-for="item in options" :key="item.name" v-if="item.type==='account'" type="text"
-                 class="option">
-        <div class="option-div">
-          <i :class="item.icon"></i>
-          <div class="option-title">{{ item.name }}</div>
-        </div>
-      </el-button>
-    </div>
-  </el-header>
-  <!--  <el-popover-->
-  <!--      placement="right"-->
-  <!--      width="400"-->
-  <!--      trigger="click">-->
-  <!--    <el-table :data="gridData">-->
-  <!--      <el-table-column width="150" property="date" label="日期"></el-table-column>-->
-  <!--      <el-table-column width="100" property="name" label="姓名"></el-table-column>-->
-  <!--      <el-table-column width="300" property="address" label="地址"></el-table-column>-->
-  <!--    </el-table>-->
-  <!--    <el-button slot="reference">click 激活</el-button>-->
-  <!--  </el-popover>-->
+  </div>
 </template>
-<script type="text/javascript">
-  export default {
-    data() {
-      return {
-        title: 'MyNavicat',
-        options: [
-          {
-            type: 'core', icon: 'fa fa-user-circle fa-3x', name: '链接', path: '', slot: 'reference',
-            click: this.postmsg,
-          },
-          {
-            type: 'core', icon: 'fa fa-user-circle fa-3x', name: '新建查询', path: '',
-            click: this.goDialog,
-          },
-          {type: 'base', icon: 'fa fa-user-circle fa-3x', name: '表', path: '',},
-          {type: 'base', icon: 'fa fa-user-circle fa-3x', name: '视图', path: '',},
-          {type: 'base', icon: 'fa fa-user-circle fa-3x', name: '函数', path: '',},
-          {type: 'base', icon: 'fa fa-user-circle fa-3x', name: '事件', path: '',},
-          {type: 'base', icon: 'fa fa-user-circle fa-3x', name: '用户', path: '',},
-          {type: 'base', icon: 'fa fa-user-circle fa-3x', name: '查询', path: '',},
-          {type: 'base', icon: 'fa fa-user-circle fa-3x', name: '备份', path: '',},
-          {type: 'base', icon: 'fa fa-user-circle fa-3x', name: '自动运行', path: '',},
-          {type: 'base', icon: 'fa fa-user-circle fa-3x', name: '模型', path: '',},
-          {type: 'views', icon: 'fa fa-user-circle fa-3x', name: '视窗', path: '',},
-          {type: 'account', icon: 'fa fa-user-circle fa-3x', name: '账户', path: '',},
+<script>
+import setting from '../../setting.json';
+
+export default {
+  data () {
+    return {
+      title: document.title,
+      options: [
+        [
+          {type: 'core', table: 'newLink', title: '链接', action: 'link'},
+          {type: 'core', table: 'newQuery', title: '新建查询', action: 'query'},
+          {type: 'base', table: 'table', title: '表', path: '', active: true},
+          {type: 'base', table: 'view', title: '视图', path: ''},
+          {type: 'base', table: 'fn', title: '函数', path: ''},
+          {type: 'base', table: 'event', title: '事件', path: ''},
+          {type: 'base', table: 'user', title: '用户', path: ''},
+          {type: 'base', table: 'query', title: '查询', path: ''},
+          {type: 'base', table: 'backup', title: '备份', path: ''},
+          {type: 'base', table: 'autoRun', title: '自动运行', path: ''},
+          {type: 'base', table: 'model', title: '模型', path: ''},
         ],
-      };
+        [
+          {type: 'views', table: 'leftView,rightView', title: '视窗', path: ''},
+          {type: 'account', table: 'loginUser', title: '账户', path: ''},
+        ],
+      ],
+      icon: setting.icon.menu,
+    };
+  },
+  methods: {
+    getIconDom (icon) {
+      return this.icon[icon]['25'].indexOf('svg') !== -1 ? this.icon[icon]['25'] : this.icon[icon];
     },
-    methods: {
-      postmsg() {
-        let _this = this;
-        this.$messages.send({
-          channel: _this.$channel.MENU,
-          messages: _this.$messages.MENU.FILE,
-          name: 'newLink'
-        });
-      },
-      goDialog() {
-        console.log(this);
-        this.$router.push({
-          path: '/myDialog',
-        });
+    menuClick (item, index) {
+      let _this = this;
+      switch (item.type) {
+        /**
+           * 新链接调取原生菜单
+           * 新查询调取新地址建立新tab页
+           */
+        case 'core':
+            item.table === 'newLink' ?
+              _this.$message.send(setting.path.menu.open.path, {params: setting.path.menu.open.params.newLink}) :
+              _this.$message.$emit(setting.path.root.creat.path, {params: {path: item.table, table: item.table}});
+          break;
+        case 'base':
+          _this.activeMenu(item);
+          break;
+        case 'views':
+          break;
+        case 'account':
+          break;
+        default:
+          break;
       }
     },
-    mounted() {
+    activeMenu (item) {
+      let _this = this;
+      for (let i = 0; i < _this.options.length; i++) {
+        for (let j = 0; j < _this.options[i].length; j++) {
+          _this.options[i][j].active = false;
+        }
+      }
+      item.active = true;
+      _this.$message.$emit(setting.path.root.go.path, {params: {path: item.path, table: item.table}});
     },
-  };
+  },
+};
 </script>
-<style scoped>
-  .menu-bar {
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 22px;
-    width: 100%;
-    display: block;
-    overflow: hidden;
-  }
+<style scoped lang="scss">
+  .header {
+    .title-bar, .menu-div, .title, .menu-group, .menu-item, .menu-item-icon, .menu-item-title {
+      display: flex;
+    }
 
-  .menu-bar-content {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-  }
+    .title-bar {
+      height: 22px;
+      width: 100%;
+      justify-content: center;
+      font-size: 12px;
+      color: #8f8f8f;
 
-  .menus {
-    display: flex;
-    align-self: flex-start;
-    flex-direction: row;
-    padding: 4px 0 0 7px;
-    color: transparent;
-  }
+      .title {
+      }
+    }
 
-  .menus:hover {
-    color: #363636;
-  }
+    .menu-div {
+      min-width: 950px;
+      font-size: 11px;
+      line-height: 1.8;
+      color: #8f8f8f;
+      height: 55px;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
 
-  .menus .fa {
-    border-radius: 7px 7px 7px 7px;
-    content: ' ';
-    padding: 6.3px 3px;
-    margin-right: 7px;
-    font-size: 9px;
-    line-height: 0px;
-  }
+      .menu-div .menu-group:first-child {
+        margin-left: 100px;
+        grid-template-columns: repeat(10, 62px);
+        grid-template-rows: 100%;
+      }
 
-  .menus .fa:nth-child(2) {
-    padding-top: 7px;
-  }
+      .menu-group {
+        flex-direction: row;
 
-  .menus .fa:last-child {
-    transform: rotate(45deg);
-    padding: 6px 4px;
-  }
+        .menu-item {
+          width: 63px;
+          text-align: center;
+          border-left-width: 1px;
+          flex-direction: column;
+          transition: .1s;
 
-  .menu-title {
-    display: flex;
-    align-self: center;
-    font-size: 14px;
-  }
+          .menu-item-icon {
+            width: 33px;
+            height: 33px;
+            align-self: center;
+            justify-content: center;
+            align-items: center;
+            user-select: auto;
+            -webkit-user-select: auto;
 
-  .menus.active .fa {
-    background-color: red;
-  }
+            &:focus, &:active {
+              opacity: .6;
+            }
+          }
 
-  .menus.active .fa:nth-child(2) {
-    background-color: yellow;
-  }
+          .menu-item-title {
+            align-self: center;
+          }
+        }
 
-  .menus.active .fa:last-child {
-    background-color: green;
-  }
+        .menu-item:nth-child(3) {
+          margin-left: 43px;
+        }
 
-  .menus.inactive .fa {
-    background-color: #6c6c6c;
-  }
+        .clicked {
+          background-color: #696969;
+          border-radius: 2px 2px 0 0;
+        }
+      }
 
-  .menu-title.active {
-    color: #f3f3f3;
-  }
+      .menu-group:nth-child(2) {
+        .menu-item:first-child {
+          margin-right: 46px;
+          width: 88px;
+          display: grid;
+          grid-template-columns: 50% 50%;
+          grid-template-rows: 60% 40%;
 
-  .menu-title.inactive {
-    color: #6c6c6c;
-  }
-</style>
-<style scoped>
-  .option-group {
-    min-width: 880px;
-    display: flex;
-    justify-content: space-between;
-    overflow: hidden;
-    -webkit-app-region: drag;
-    -webkit-user-select: none;
-    box-shadow: 0 1px 0px 0px #222;
-    padding: 22px 0 0 0;
-  }
 
-  .option-items:first-child {
-    margin-left: 20px;
-  }
+          .menu-item-icon {
+            display: grid;
+            width: 44px;
+          }
 
-  .option-items:last-child {
-    margin-right: 10px;
-  }
-
-  .option {
-    border: none;
-    margin: 0 0 0 0;
-    background-color: transparent;
-    outline: none;
-    padding: 0 6px;
-  }
-
-  .option-div {
-    width: 45px;
-    height: 50px;
-    font-size: 10px;
-    padding: 5px 0 0 0;
-    color: green;
-  }
-
-  .fa:active, .fa:focus {
-    opacity: 0.7;
-  }
-
-  .option-title {
-    color: #f3f3f3;
-    line-height: 20px;
-  }
-
-  .option-group.active {
-    background-image: linear-gradient(#535251, #434241);
-  }
-
-  .option-group.inactive {
-    background-color: #3b3a39;
+          .menu-item-title {
+            display: grid;
+            width: 88px;
+          }
+        }
+      }
+    }
   }
 </style>

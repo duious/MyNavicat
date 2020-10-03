@@ -1,34 +1,34 @@
 {
-  "name": "myNavicat",
-  "version": "1.3.7",
+  "name": "MyNavicat",
+  "version": "0.0.1",
   "description": "A faster, better and more stable redis desktop manager.",
-  "author": "qii404.me",
+  "author": "duious",
   "private": true,
-  "main": "electron-main.js",
+  "main": "main.js",
   "dependencies": {
-    "electron-updater": "^4.0.6",
-    "font-list": "^1.2.11"
+    "electron-updater": "^4.3.4",
+    "electron-store": "^6.0.0"
   },
-  "repository": "github:qishibo/myNavicat",
+  "repository": "github:duious/MyNavicat",
   "build": {
-    "appId": "me.qii404.myNavicat",
-    "productName": "myNavicat",
+    "appId": "duious.MyNavicat",
+    "productName": "MyNavicat",
     "artifactName": "${productName}.${version}.${ext}",
-    "copyright": "Copyright © 2020 qii404.me",
+    "copyright": "Copyright © 2020 duious",
     "asar": true,
     "directories": {
       "output": "build-apps",
       "buildResources": "./"
     },
-    "electronVersion": "8.2.0",
+    "electronVersion": "10.0.0",
     "files": [
-      "!static/js/*.map",
-      "!static/css/*.map"
+      "!_assets/js/*.map",
+      "!_assets/css/*.map"
     ],
     "publish": [{
       "provider": "github",
-      "owner": "qishibo",
-      "repo": "myNavicat",
+      "owner": "duious",
+      "repo": "MyNavicat",
       "releaseType": "prerelease"
     }],
     "win": {
@@ -58,7 +58,7 @@
         "dmg", "mas"
       ],
       "extendInfo": {
-        "ElectronTeamID": "68JN8DV835"
+        "ElectronTeamID": "8888888888"
       }
     }
   }

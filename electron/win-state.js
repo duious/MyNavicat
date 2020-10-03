@@ -1,4 +1,5 @@
-const { app } = require('electron');
+const electron = require('electron');
+const app = electron.app;
 const path = require('path');
 const fs = require('fs');
 
@@ -9,8 +10,8 @@ const winState = {
 
     try {
       data = fs.readFileSync(this.getStateFile());
+    } catch (err) {
     }
-    catch (err) {}
 
     return this.parseJson(data);
   },
@@ -43,14 +44,14 @@ const winState = {
       state.height < 200 && (state.height = 200);
 
       return state;
-    }
-    catch (err) {
+    } catch (err) {
       return false;
     }
   },
 
   saveStateToStorage(winState) {
-    fs.writeFile(this.getStateFile(), JSON.stringify(winState), (err) => {});
+    fs.writeFile(this.getStateFile(), JSON.stringify(winState), (err) => {
+    });
   },
 
   getStateFile() {
@@ -65,8 +66,8 @@ const winState = {
 
     try {
       json = JSON.parse(str);
+    } catch (err) {
     }
-    catch(err) {}
 
     return json;
   },

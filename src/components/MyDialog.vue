@@ -1,169 +1,340 @@
 <template>
-  <div class="def-dialog-div">
-    <el-dialog :visible.sync="show" custom-class="def-dialog"
-               :fullscreen="true" :show-close="false">
-      <el-tabs type="card" value="normal">
-        <el-tab-pane v-for="(item,index) in tabs" :label="item.label" :name="item.name" :key="index">
-          {{item.content}}
-          <div v-if="item.name == 'normal'" class="def-dialog-content-div">
-            <el-form ref="form" label-width="80px" size="mini">
-              <el-form-item label="链接名:">
-                <el-input size="mini" clearable v-model="link.name"></el-input>
-              </el-form-item>
-              <el-form-item label="添加到:">
-                <el-input></el-input>
-              </el-form-item>
-              <el-form-item label="主机:">
-                <el-input v-model="link.host"></el-input>
-              </el-form-item>
-              <el-form-item label="端口:">
-                <el-input v-model="link.port"></el-input>
-              </el-form-item>
-              <el-form-item label="用户名:">
-                <el-input v-model="link.user"></el-input>
-              </el-form-item>
-              <el-form-item label="密码:">
-                <el-input show-password v-model="link.password"></el-input>
-              </el-form-item>
-              <el-form-item>
-                <el-checkbox v-model="link.remember">保存密码</el-checkbox>
-              </el-form-item>
-              {{err}}
-            </el-form>
-          </div>
-        </el-tab-pane>
-      </el-tabs>
-      <div class="dialog-footer">
-        <div class="def-dialog-btn-div">
-          <el-button class="def-dialog-btn def-dialog-test" size="mini"
-                     @click="testLink">链接测试
-          </el-button>
+  <div class="dialog-div">
+    <div class="dialog-header">
+      <div class="dialog-btn-group">
+        <input class="dialog-btn" v-for="(item,index) in options" type="button"
+               :value="item.title" :class="item.clicked?'clicked':''"
+               @click="tabClick(item,index)"/>
+      </div>
+    </div>
+    <div class="dialog-main">
+      <div class="dialog-form icon-div">
+        <div class="icon" v-html="icon.icon"></div>
+        <div :class="connection.state === 'disconnected' ? 'error' : connection.state === 'connected' ? 'success' : ''"
+             v-html="connection.state === 'disconnected' ? icon.error : connection.state === 'connected' ? icon.success : ''"
+             class="icon"></div>
+        <div class="icon" v-html="icon.db"></div>
+      </div>
+      <div class="dialog-form" v-show="'normal' === clicked.type">
+        <div class="dialog-form-item">
+          <span>链接名</span>
+          <label>
+            <input type="text" v-model="link.title" placeholder="链接备注"/>
+          </label>
         </div>
-        <div class="def-dialog-btn-div">
-          <el-button class="def-dialog-btn def-dialog-cancel" size="mini"
-                     @click="cancel">取消
-          </el-button>
-          <el-button class="def-dialog-btn def-dialog-save" size="mini"
-                     @click="saveLink">保存
-          </el-button>
+        <div class="dialog-form-item">
+          <span>添加到</span>
+          <label>
+            <input type="text"/>
+          </label>
+        </div>
+        <div class="dialog-form-item">
+          <span>主机</span>
+          <label>
+            <input type="text" v-model="link.linkData.host" placeholder="IP地址/域名"/>
+          </label>
+        </div>
+        <div class="dialog-form-item">
+          <span>端口</span>
+          <label>
+            <input type="text" v-model="link.linkData.port" placeholder="数据库端口，默认3670"/>
+          </label>
+        </div>
+        <div class="dialog-form-item">
+          <span>用户名</span>
+          <label>
+            <input type="text" v-model="link.linkData.user" placeholder="登陆用户名"/>
+          </label>
+        </div>
+        <div class="dialog-form-item">
+          <span>密码</span>
+          <label>
+            <input type="password" v-model="link.linkData.password" placeholder="登陆密码"/>
+          </label>
+        </div>
+        <div class="dialog-form-item">
+          <span>保存密码</span>
+          <label>
+            <input type="text" v-model="link.linkData.remember"/>
+          </label>
         </div>
       </div>
-    </el-dialog>
+    </div>
+    <div class="dialog-footer">
+      <div class="dialog-btn-group">
+        <input class="dialog-btn" type="button" value="链接测试" @click="connectionTest">
+      </div>
+      <div class="dialog-btn-group">
+        <input class="dialog-btn" type="button" value="取消" @click="connectionCancel">
+        <input class="dialog-btn" type="button" value="保存" @click="connectionSave">
+      </div>
+    </div>
   </div>
 </template>
-
 <script>
-  import {ipcRenderer} from "electron";
+import setting from '../../setting.json';
 
-  export default {
-    name: "myDialog",
-    data() {
-      return {
-        show: true,
-        tabs: [
-          {label: '常规', name: 'normal', content: '',},
-          {label: '高级', name: 'senior', content: '',},
-          {label: '数据库', name: 'db', content: '',},
-          {label: 'SSL', name: 'ssl', content: '',},
-          {label: 'SSH', name: 'ssh', content: '',},
-          {label: 'HTTP', name: 'http', content: '',},
-        ],
-        link: {
-          name: '127.0.0.1',
-          remember: '',
-          host: "127.0.0.1",
-          port: 3306,
-          user: "root",
-          password: "HomeBrewMysql!@#123",
-          database: 'demo'
+export default {
+  name: 'myDialog',
+  props: ['id'],
+  data () {
+    return {
+      options: [
+        {title: '常规', type: 'normal', clicked: true},
+        {title: '高级', type: 'senior'},
+        {title: '数据库', type: 'db'},
+        {title: 'SSL', type: 'SSL'},
+        {title: 'SSH', type: 'SSH'},
+        {title: 'HTTP', type: 'HTTP'},
+      ],
+      clicked: {},
+      link: {
+        'id': '',
+        'type': setting.dist.link.type.mysql,
+        'title': '',
+        'linkData': {
+          'database': 'mysql',
+          'host': 'localhost',
+          'password': '',
+          'port': 3306,
+          'user': 'root',
         },
-        windowId: this.$route.query.id,
-      };
-    },
-    created() {
-    },
-    mounted() {
-
-    },
-    methods: {
-      testLink: function () {
-        let _this = this;
-        let connection = _this.$mysql.createConnection({
-          host: _this.link.host,
-          user: _this.link.user,
-          password: _this.link.password,
-          port: _this.link.port,
-          database: _this.link.database,
-        });
-        connection.connect(function (err) {
-          if (connection.state === 'connected') {
-            _this.$message({message: '链接成功！', type: 'success', offset: 80});
-          }
-        });
-
+        'state': {
+          'clicked': false,
+          'linked': false,
+          'open': false,
+          'remember': false,
+        },
+        'children': '',
+        'pool': '',
       },
-      cancel: function () {
-
-      },
-      saveLink: function () {
-        let _this = this;
-        _this.$messages.send({
-          channel: _this.$channel.STORE, messages: _this.$messages.STORE.SET,
-          key: 'link', val: _this.link
-        }).then(res => {
-            _this.$messages.send({
-              channel: _this.$channel.WINDOW, messages: _this.$messages.WINDOW.CLOSE,
-              id: _this.windowId
-            });
-          },
-          err => {
-
-          }
-        )
+      connection: '',
+      icon: setting.icon.base,
+    };
+  },
+  created () {
+    let _this = this;
+    _this.clicked = _this.options[0];
+    // 响应：编辑链接
+    _this.$message.$on(setting.path.action.edit.link.path, (res) => {
+      console.error(res);
+      _this.link = res.res.item;
+    });
+  },
+  methods: {
+    tabClick (item, index) {
+      let _this = this;
+      for (let i = 0; i < _this.options.length; i++) {
+        _this.options[i].clicked = false;
       }
+      item.clicked = true;
+      _this.connection = {};
+      _this.clicked = item;
     },
-  }
+    connectionTest () {
+      let _this = this;
+      _this.connection = '';
+      _this.connection = _this.$mysql.createConnection(_this.link.linkData);
+      _this.connection.connect({}, function (err) {
+        if (_this.connection.state === 'connected') {
+          _this.$message({message: '链接成功！', type: 'success', offset: 80});
+        } else {
+          console.log(err);
+        }
+      });
+    },
+    connectionCancel () {
+      let _this = this;
+      _this.$message.send(setting.path.action.close.win.path, {id: _this.id});
+    },
+    connectionSave () {
+      let _this = this;
+      // 保存配置
+      _this.$message.send(setting.path.disk.set.path, {
+        key: setting.disk.key.link,
+        val: JSON.parse(JSON.stringify(_this.link)),
+      }).then((res) => {
+        _this.$message.send(setting.path.action.close.win.path, {id: _this.$route.params.id, action: 'update'});
+      });
+    },
+  },
+};
 </script>
+<style scoped lang="scss">
+  #app {
+    background-color: transparent;
 
-<style>
-  .def-dialog-div {
+    .dialog-div, .dialog-header, .dialog-main, .dialog-form, .dialog-form-item, .dialog-footer, .dialog-btn-group, .dialog-btn {
+      display: flex;
+    }
+
+    .dialog-div {
+      min-width: 680px;
+      width: auto;
+      min-height: 580px;
+      height: auto;
+      margin: 0 0 0 0;
+      padding: 20px;
+      box-shadow: inset 0 1px 0 0 #000;
+      flex: 1 0 auto;
+      flex-direction: column;
+      justify-content: space-between;
+
+      .dialog-header, .dialog-main {
+        background-color: #1e1e1e;
+      }
+
+      .dialog-header {
+        justify-content: center;
+        height: 32px;
+        margin-bottom: 1px;
+
+        .dialog-btn-group {
+          justify-content: center;
+          align-items: center;
+
+          .dialog-btn {
+            background-color: transparent;
+            border: none;
+            color: #fefefe;
+            min-width: 36px;
+            width: auto;
+
+            &:not(:last-child) {
+              margin-right: 4px;
+            }
+          }
+
+          .clicked {
+            background-color: #0f7bff;
+            border-radius: 2px;
+            opacity: 1;
+            transition: .1s;
+          }
+        }
+      }
+
+      .dialog-main {
+        flex: 1 1 auto;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+
+        .icon-div {
+          display: grid;
+          height: 120px;
+          grid-template-columns: 25% 50% 25%;
+          place-items: center center;
+
+          .icon {
+            min-width: 80px;
+            width: auto;
+            transition: .3s;
+
+            &:nth-child(2) {
+              display: grid;
+              width: 120px;
+              height: 2px;
+              margin: 0 10px;
+              background-color: #adadad;
+              place-items: center center;
+            }
+          }
+
+          .icon.error {
+            background-color: #f00;
+            transition: .3s;
+          }
+
+          .icon.success {
+            background-color: #00ff00;
+            transition: .3s;
+          }
+        }
+
+        .dialog-form {
+          flex-direction: column;
+          justify-content: center;
+          transition: .2s;
+
+          .dialog-form-item {
+            width: 360px;
+            height: auto;
+            line-height: 20px;
+            color: #fefefe;
+            margin: 2px 0;
+            overflow: hidden;
+
+            & span {
+              width: 65px;
+              font-size: 12px;
+              line-height: 2.2;
+            }
+
+            & label input[type='text'], & label input[type='password'] {
+              width: 300px;
+              height: 20px;
+              background-color: #292929;
+              border: 1px solid #3e3e3e;
+              border-radius: 2px;
+              color: #fefefe;
+              transition: .6s;
+              padding: 0 0 0 0;
+              margin: 2px 4px;
+
+              &:focus {
+                border-color: #1f5a8f;
+                outline: 0;
+                -webkit-box-shadow: inset 0 2px 2px rgba(0, 0, 0, .075), 0 0 8px rgba(43, 128, 255, 0.6);
+                box-shadow: inset 0 2px 2px rgba(0, 0, 0, .075), 0 0 8px rgba(43, 128, 255, 0.6);
+                transition: .3s;
+              }
+            }
+          }
+        }
+      }
+
+      .dialog-footer {
+        height: 40px;
+        flex-direction: row;
+        justify-content: space-between;
+
+        .dialog-btn-group {
+          align-self: flex-end;
+
+          .dialog-btn {
+            background-color: #696969;
+            color: #fefefe;
+            border: none;
+            border-radius: 2px;
+            transition: .4s;
+
+            &:active {
+              background-image: linear-gradient(#4e4fed, #4027d2);
+            }
+          }
+
+          &:first-child .dialog-btn {
+            width: 78px;
+          }
+        }
+      }
+    }
+
+    .dialog-btn-group {
+      .dialog-btn {
+        height: 20px;
+        line-height: 1.6;
+        font-size: 12px;
+        width: 50px;
+        text-align: center;
+        margin: 0 auto;
+        display: block;
+
+        &:not(:last-child) {
+          margin-right: 10px;
+        }
+      }
+    }
   }
-
-  .def-dialog {
-    border: 20px solid #363739;
-  }
-
-  .def-dialog::before {
-    content: ' ';
-    height: 1px;
-    box-shadow: 0 2px 0 0 #000;
-  }
-
-  .def-dialog-btn-div {
-    display: flex;
-  }
-
-  .def-dialog-btn, .def-dialog-btn:hover {
-    background-color: #6f6f6e;
-    border-color: #6f6f6e;
-    color: #fff;
-    padding: 4px 14px;
-  }
-
-  .def-dialog-btn:active {
-    background-color: #0000ff;
-    border-color: #00f;
-    color: #fff;
-    transition: .1s;
-  }
-
-  .def-dialog-test {
-    align-self: flex-start;
-  }
-
-  .def-dialog-content-div {
-    margin: 0 auto;
-    width: 400px;
-  }
-
 </style>

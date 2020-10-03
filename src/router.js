@@ -1,26 +1,15 @@
-import Vue from 'vue';
-import Router from 'vue-router';
-import Index from '@/components/Index';
-import MyDialog from '@/components/MyDialog';
+import {createRouter, createWebHashHistory, createWebHistory} from 'vue-router';
+import Index from './components/Index.vue';
 
-Vue.use(Router);
-
-const originalPush = Router.prototype.push
-Router.prototype.push = function push(location) {
-  return originalPush.call(this, location).catch(err => err)
-}
-
-export default new Router({
+const router = createRouter({
+  history: createWebHashHistory(),
   routes: [
+    {path: '/index', name: 'index', component: Index},
     {
-      path: '/',
-      name: 'index',
-      component: Index,
-    },
-    {
-      path: '/myDialog',
-      name: 'myDialog',
-      component: MyDialog,
+      path: '/myDialog/:id/:v', name: 'myDialog', component: () => import('./components/MyDialog.vue'),
+      props: (router) => ({id: router.params.id}),
     },
   ],
 });
+
+export default router;
