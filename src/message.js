@@ -22,31 +22,29 @@ message.send = function (url, params) {
       !!setting.path[url[0]][url[1]] ?
         resolve({url: url.join('/'), params: params}) :
         reject({code: -1, msg: '消息不合规！'}) : reject({code: -1, msg: '消息不合规！'});
-  }).then((req) => {
-    return new Promise((resolve, reject) => {
-      console.log('C:req:', req);
-      req.repUrl = req.url + '/' + new Date().getTime() + Math.random();
-      /**
+  }).then((req) => new Promise((resolve, reject) => {
+    console.log('C:req:', req);
+    req.repUrl = req.url + '/' + new Date().getTime() + Math.random();
+    /**
        * 消息总线 接收消息 发送指令 到electron
        * @param msg
        */
-      ipcRenderer.send(req.url, req);
-      /**
+    ipcRenderer.send(req.url, req);
+    /**
        * 接收 electron指令结果 发送消息 到消息总线
        */
-      ipcRenderer.on(req.repUrl, (event, res) => {
-        console.info('C:rep:', res, JSON.parse(JSON.stringify(event)));
-        resolve(res);
-      });
-      try {
-        setTimeout(function () {
-          reject({code: -1, msg: '执行超时', req});
-        }, 3000);
-      } catch (e) {
-        console.error('C:warm:', req, '执行超时', e);
-      }
+    ipcRenderer.on(req.repUrl, (event, res) => {
+      console.info('C:rep:', res, JSON.parse(JSON.stringify(event)));
+      resolve(res);
     });
-  });
+    try {
+      setTimeout(function () {
+        reject({code: -1, msg: '执行超时', req});
+      }, 3000);
+    } catch (e) {
+      console.error('C:warm:', req, '执行超时', e);
+    }
+  }));
 };
 
 /* 消息总线 收 */
@@ -145,7 +143,7 @@ function emitMsg (url, req, event) {
 // });
 
 export default {
-  install: function (app) {
+  install: (app) => {
     message.app = app;
     app.config.globalProperties.$message = message;
     app.provide(message, message);

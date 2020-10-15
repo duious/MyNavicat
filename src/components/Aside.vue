@@ -3,12 +3,14 @@
     @mousedown="resizeDown($event)" @mousemove="resizeMove($event)"
        @mouseleave="resizeUp" @mouseout="resizeUp" @mouseup="resizeUp"
        @mouseover="resizeUp">
-    <component v-if="''!==component" :treeArr.sync="linkArr" :is="component"
+    <component v-if="''!==component" :treeArr="linkArr" :is="component"
                @linkClick="linkClick" @linkContextMenu="linkContextMenu"></component>
   </div>
 </template>
 <script>
-import {ref} from 'vue';
+import {ref, reactive} from 'vue';
+import {mysqlCore} from '../mysql-core';
+import {query, SQL_DEF} from '../util-mysql';
 import setting from '../../setting.json';
 import Tree from './Tree.vue';
 
@@ -42,9 +44,7 @@ export default {
   },
   created () {
     let _this = this;
-    // 获取当前存储的所有链接
-    _this.$emit('getLinkArr', _this.updateLinkList);
-    // _this.getLinkList();
+    _this.initLinkList();
     // 响应：更新链接列表
     _this.$message.$on(setting.path.action.update.link.path, () => {
       _this.$emit('getLinkArr', _this.updateLinkList);
@@ -76,13 +76,27 @@ export default {
   },
   methods: {
     /**
+     * 初始化：获取当前存储的所有链接
+     */
+    initLinkList () {
+      let _this = this;
+      _this.$message.send(setting.path.disk.get.path, {key: setting.disk.key.link}).then((res) => {
+        mysqlCore.resetLink();
+        for (let i = 0; i < res.res.length; i++) {
+          mysqlCore.setLink({index: i, item: res.res[i]});
+        }
+        _this.updateLinkList();
+      });
+    },
+    /**
      * 更新链接列表
      * @param {Array} linkArr
      */
-    updateLinkList (linkArr) {
+    updateLinkList () {
       let _this = this;
       _this.component = '';
-      _this.linkArr = linkArr;
+      _this.linkArr = mysqlCore.getLink();
+      console.error(_this.linkArr);
       _this.component = 'Tree';
     },
     /**
@@ -143,12 +157,34 @@ export default {
      */
     connectionOpen () {
       let _this = this;
-      _this.$emit('connectLink', _this.focusItem.item.id.split('.')[0], (res) => {
-        _this.focusItem.item.children = [];
-        res.find((one) => {
-          if (one.id.split('.')[0] == _this.focusItem.item.id) {
-            _this.focusItem.item.children.push(one);
+      let focusId = _this.focusItem.item.id.split('.')[0];
+      mysqlCore.getConnection({id: focusId}).then((connection) => {
+        query(connection, SQL_DEF.SCHEMA_NAME).then((res) => {
+          let resItem = '';
+          _this.focusItem.item.children = [];
+          for (let i = 0; i < res.length; i++) {
+            resItem = {
+              'id': focusId + '.' + (i + 1),
+              'type': 'db',
+              'title': res[i]['SCHEMA_NAME'],
+              'dbData': {
+                'name': res[i]['SCHEMA_NAME'],
+                'character': res[i]['DEFAULT_CHARACTER_SET_NAME'],
+                'collation': res[i]['DEFAULT_COLLATION_NAME'],
+              },
+              'state': {
+                'clicked': false,
+                'linked': false,
+                'open': false,
+              },
+              'connection': connection,
+              'children': '',
+            };
+            _this.focusItem.item.children.push(resItem);
+            mysqlCore.setDb({id: focusId, item: resItem});
           }
+          mysqlCore.setLinkState({id: focusId, stateItem: 'open', to: true});
+          _this.updateLinkList();
         });
       });
     },
@@ -157,10 +193,9 @@ export default {
      */
     connectionClose () {
       let _this = this;
-      let item = _this.linkArr[_this.focusItem.index];
-      item.pool.end();
-      item.pool = item.children = '';
-      item.state.linked = item.state.open = false;
+      mysqlCore.closeLink({id: _this.focusItem.item.id});
+      mysqlCore.setLinkState({id: _this.focusItem.item.id, stateItem: ['linked', 'open'], to: false});
+      _this.updateLinkList();
     },
     /**
      * 初始化 数据库 库内表 列表
@@ -168,46 +203,25 @@ export default {
      * @param {Array} res 返回的结果
      */
     initDBTable (item, res) {
-      item.children = [];
-      item.children.push({
-        id: item.id + '.' + 1, type: '', title: setting.dist.table.type.table.title,
-        state: {linked: true, clicked: false, open: false}, children: [],
-      });
-      item.children.push({
-        id: item.id + '.' + 2, type: '', title: setting.dist.table.type.views.title,
-        state: {linked: true, clicked: false, open: false}, children: [],
-      });
-      item.children.push({
-        id: item.id + '.' + 3, type: '', title: setting.dist.table.type.fn.title,
-        state: {linked: true, clicked: false, open: false}, children: [],
-      });
-      item.children.push({
-        id: item.id + '.' + 4, type: '', title: setting.dist.table.type.event.title,
-        state: {linked: true, clicked: false, open: false}, children: [],
-      });
-      item.children.push({
-        id: item.id + '.' + 5, type: '', title: setting.dist.table.type.query.title,
-        state: {linked: true, clicked: false, open: false}, children: [],
-      });
-      item.children.push({
-        id: item.id + '.' + 6, type: '', title: setting.dist.table.type.backup.title,
-        state: {linked: true, clicked: false, open: false}, children: [],
-      });
+      let dbItem;
       for (let i = 0; i < res.length; i++) {
         switch (res[i]['TABLE_TYPE']) {
           case 'BASE TABLE':
-            item.children[0].children.push({
+            dbItem = {
               id: item.children[0].id + '.' + (item.children[0].children.length === 0 ? '1' : item.children[0].children.length + 1),
               type: setting.dist.table.type.table.val, title: res[i]['TABLE_NAME'],
               state: {clicked: false, open: false},
-            });
+            };
+            item.children[0].children.push(dbItem);
+            mysqlCore.setTable({id: dbItem.id, item: dbItem});
             break;
           case 'VIEW':
-            item.children[1].children.push({
+            dbItem = {
               id: item.children[1].id + '.' + (item.children[1].children.length === 0 ? '1' : item.children[1].children.length + 1),
               type: setting.dist.table.type.views.val, title: res[i]['TABLE_NAME'],
               state: {clicked: false, open: false},
-            });
+            };
+            item.children[1].children.push(dbItem);
             break;
           default:
             break;
@@ -219,13 +233,21 @@ export default {
      */
     dbOpen () {
       let _this = this;
-      _this.$emit('getConnection', _this.focusItem.item.id.split('.')[0], (id, connection) => {
-        _this.focusItem.item.state.linked = _this.focusItem.item.state.open = true;
-        // 当前链接包含的库
-        _this.$mysql.$query(connection, _this.$mysql.$SQL_DEF.ALL_TABLE, [_this.focusItem.item['title']]).then((res) => {
+      let focusId = _this.focusItem.item.id.split('.')[0];
+      mysqlCore.getConnection({id: focusId}).then((connection) => {
+        query(connection, SQL_DEF.ALL_TABLE, [_this.focusItem.item['title']]).then((res) => {
           _this.initDBTable(_this.focusItem.item, res);
+          mysqlCore.setDbState({id: _this.focusItem.item.id, stateItem: ['linked', 'open'], to: true});
+          // _this.updateLinkList();
         });
       });
+      // _this.$emit('getConnection', _this.focusItem.item.id.split('.')[0], (id, connection) => {
+      //   _this.focusItem.item.state.linked = _this.focusItem.item.state.open = true;
+      //   // 当前链接包含的库
+      //   _this.$mysql.$query(connection, _this.$mysql.$SQL_DEF.ALL_TABLE, [_this.focusItem.item['title']]).then((res) => {
+      //     _this.initDBTable(_this.focusItem.item, res);
+      //   });
+      // });
     },
     /**
      * 关闭库

@@ -33,6 +33,7 @@ import * as monacoEditor from 'monaco-editor';
 import {reactive, ref, onMounted} from 'vue';
 import Selector from './Selector.vue';
 import Tabs from './Tabs.vue';
+import {mysqlCore} from '../mysql-core';
 import {SQL_DEF, query} from '../util-mysql';
 import setting from '../../setting.json';
 
@@ -105,39 +106,53 @@ export default {
     /**
      * 初始化，获取原始数据
      */
-    context.emit('getLinkArr', (res) => {
-      linkArr.linkArr = res.map((one) => {
-        // 过滤掉不需要的
-        let {id, state, title, type} = one;
-        return {id, state, title, type};
-      });
-      linkArr.linkArr = ref(linkArr.linkArr);
-      linkArr.linkArr = JSON.parse(JSON.stringify(linkArr.linkArr));// 去反应
-      linkArr.linkArr.filter((one) => {
-        one.state.clicked = one.state.linked = false;
-      });
-      linkArr.component = 'Selector';
+    linkArr.linkArr = mysqlCore.getLink().map((one) => {
+      // 过滤掉不需要的
+      let {id, state, title, type} = one;
+      return {id, state, title, type};
     });
+    linkArr.linkArr = JSON.parse(JSON.stringify(linkArr.linkArr));// 去反应
+    linkArr.linkArr.filter((one) => {
+      one.state.clicked = one.state.linked = false;
+    });
+    linkArr.component = 'Selector';
     /**
      * 链接更改
      * @param {Object} item 选中的链接对象
      */
     const clickLinkItem = (item) => {
       if (item?.id?.indexOf('.') === -1) {
-        context.emit('connectLink', {
-          id: item.id, cb: (res) => {
-            dbArr.dbArr = res.map((one) => {
+        mysqlCore.getConnection({id: item.id}).then((connection) => {
+          query(connection, SQL_DEF.SCHEMA_NAME).then((res) => {
+            let resItem = '';
+            dbArr.dbArr = [];
+            for (let i = 0; i < res.length; i++) {
+              resItem = {
+                'id': item.id + '.' + (i + 1),
+                'type': 'db',
+                'title': res[i]['SCHEMA_NAME'],
+                'dbData': {
+                  'name': res[i]['SCHEMA_NAME'],
+                  'character': res[i]['DEFAULT_CHARACTER_SET_NAME'],
+                  'collation': res[i]['DEFAULT_COLLATION_NAME'],
+                },
+                'state': {
+                  'clicked': false,
+                  'linked': false,
+                  'open': false,
+                },
+              };
+              dbArr.dbArr.push(resItem);
+              mysqlCore.setDb({id: item.id, item: resItem});
+            }
+            dbArr.dbArr = dbArr.dbArr.map((one) => {
               // 过滤不需要的
               let {id, state, title, type} = one;
               return {id, state, title, type};
             });
-            dbArr.dbArr = ref(dbArr.dbArr);
             dbArr.dbArr = JSON.parse(JSON.stringify(dbArr.dbArr));// 去反应
-            dbArr.dbArr.filter((one) => {
-              one.state.clicked = one.state.linked = false;
-            });
             dbArr.component = 'Selector';
-          },
+          });
         });
       }
       linkArr.linkArr.find((one) => {
@@ -343,7 +358,7 @@ export default {
      * 本次sql执行均在此方法内
      */
     const getConnection = (linkId) => new Promise((resolve, reject) => {
-      context.emit('getConnection', linkId, (id, connection) => {
+      mysqlCore.getConnection({id: linkId}).then((connection) => {
         sqlData.running = true;
         sqlData.connection =connection;
         resolve(connection);

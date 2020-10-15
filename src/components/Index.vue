@@ -14,6 +14,7 @@
 import Header from './Header.vue';
 import Aside from './Aside.vue';
 import Main from './Main.vue';
+import {mysqlCore} from '../mysql-core';
 import setting from '../../setting.json';
 
 export default {
@@ -21,6 +22,7 @@ export default {
   components: {'Header': Header, 'Aside': Aside, 'Main': Main},
   data () {
     return {
+      store: mysqlCore,
       /**
          *  运行时，所有链接集合
          *  @example: [
@@ -98,21 +100,6 @@ export default {
   },
   methods: {
     /**
-       * 获取当前存储的所有链接
-       * @param {function} cb 回掉函数，传入{@link linkArr}
-       */
-    getLinkArr (cb) {
-      let _this = this;
-      _this.$message.send(setting.path.disk.get.path, {key: setting.disk.key.link}).then((res) => {
-        _this.linkArr = [];
-        for (let i = 0; i < res.res.length; i++) {
-          res.res[i].connection = {state: ''};
-          _this.linkArr.push(res.res[i]);
-        }
-        cb(_this.linkArr);
-      });
-    },
-    /**
        * 将对应下标的链接建立链接
        * @param {number} id linkArr数组内元素的id
        * @param {function} cb 回掉函数，传入{@link dbArr}
@@ -142,6 +129,7 @@ export default {
               'connection': connection,
               'children': '',
             };
+            mysqlCore.setDb({id: resItem.id, item: resItem});
             for (let j = 0; j < _this.dbArr.length; j++) {
               if (_this.dbArr[j].id == resItem.id) {
                 dbArrItem = j;
@@ -155,6 +143,7 @@ export default {
             }
           }
           cb(_this.dbArr);
+          // cb();
         });
         //   .then(() => {
         //   _this.$mysql.$query(connection, _this.$mysql.$SQL_DEF.ALL_DATABASE).then((res) => {
@@ -174,7 +163,7 @@ export default {
        */
     getConnection (id, cb) {
       let _this = this;
-      let item = _this.linkArr.find((one) => {
+      let item = mysqlCore.getLink().find((one) => {
         if (one.id == id.split('.')[0]) {
           return one;
         }
@@ -189,11 +178,13 @@ export default {
       });
       item.linkData.database = dbItem?.dbData.name;
       item.pool = _this.$mysql.createPool(JSON.parse(JSON.stringify(item.linkData)));
+      // console.error(item);
       item.pool.getConnection((err, connection) => {
         if (err) {
           return;
         }
-        item.state.linked = item.state.open = true;
+        // item.state.linked = item.state.open = true;
+        mysqlCore.setLinkState({id: item.id, stateItem: 'linked', to: true});
         cb(item.id, connection);
       });
     },
