@@ -1,5 +1,5 @@
 <template>
-  <div class="select-div">
+  <div class="select-div" ref="selector">
     <div class="select-item" v-show="!selectData.selecting" @click="selectItem">
       <TreeNode class="link-item-div" v-for="(item, index) in selectData.list" :item="item" :index="index"
                 v-show="item.state.clicked"></TreeNode>
@@ -13,7 +13,7 @@
   </div>
 </template>
 <script>
-import {reactive, ref, onMounted} from 'vue';
+import {reactive, ref, onMounted, onUnmounted} from 'vue';
 import TreeNode from './TreeNode.vue';
 import setting from '../../setting.json';
 
@@ -23,6 +23,10 @@ export default {
     list: Array,
   },
   setup (props, context) {
+    /**
+     * selector dom
+     */
+    const selector = ref(null);
     const selectData = reactive({
       list: ref(props.list),
       selecting: false,
@@ -39,6 +43,8 @@ export default {
           one.state.clicked = false;
       });
       selectData.selecting = true;
+
+      document.addEventListener('click', blurSelector, true);
     };
 
     const itemClick = (item, index) => {
@@ -49,7 +55,19 @@ export default {
       selectData.selecting = false;
       context.emit('clickLinkItem', item);
     };
-    return {selectData, selectItem, itemClick};
+
+    onUnmounted(() => {
+      // 移除监听
+      document.removeEventListener('click', blurSelector, true);
+    });
+    /**
+     * 点击非可选区域，自动收起
+     * @param {event} e 点击事件
+     */
+    const blurSelector = (e) => {
+      selectData.selecting === true ? (e.target != selector.value ? selectData.selecting = false : '') : e;
+    };
+    return {selector, selectData, selectItem, itemClick};
   },
 };
 </script>

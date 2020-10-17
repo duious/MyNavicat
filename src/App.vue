@@ -9,8 +9,8 @@ export default {
   created () {
     let _this = this;
     /**
-       * 应用激活状态
-       */
+     * 应用激活状态
+     */
     _this.$message.$on(setting.path.action.update.active.path, (res) => {
         res.res.active === true ? console.debug('选中啦！') : console.debug('失焦啦！');
     });
@@ -20,6 +20,13 @@ export default {
 };
 </script>
 <style lang="scss">
+  @font-face {
+    font-family: 'Noto Sans Mono CJK SC';
+    src: url("../font/NotoSansCJKsc-Regular.otf") format('otf');
+    font-weight: normal;
+    font-style: normal;
+  }
+
   body {
     width: 100%;
     height: 100%;

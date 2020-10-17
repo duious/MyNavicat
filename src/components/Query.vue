@@ -460,8 +460,6 @@ export default {
     /**
      * 表头 缩放 左键按下
      * @param $event
-     * @param index
-     * @param item
      */
     const resizeDown = ($event) => {
       resize.begin = Number($event.clientY);

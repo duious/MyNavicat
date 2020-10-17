@@ -1,6 +1,7 @@
 <template>
   <div>
     <div class="link-item" :class="nodeData.item.state.clicked?'clicked':''"
+         :style="{'margin-left': (nodeData.item?.id?.split('.').length - 1) * 14 + 'px'}"
          @click="linkClick(nodeData.item,nodeData.index)" @contextmenu="linkContextMenu(nodeData.item,nodeData.index)">
       <i class="link-item-arrow" v-if="nodeData.item.children && nodeData.item.children !== ''"
          :class="nodeData.item.state.linked?nodeData.item.state.open?'down-arrow':'right-arrow':''"
@@ -52,6 +53,7 @@ export default {
 <style scoped lang="scss">
   .link-item-div {
     flex-direction: column;
+    transition: .4s;
 
     &, .link-item, .link-item-arrow, .link-item-icon, .link-item-name, .link-item-child {
       display: flex;
@@ -89,14 +91,14 @@ export default {
       }
 
       .down-arrow {
-        left: 5px !important;
+        left: 4px !important;
         border-width: 5px 0 5px 8px;
         border-style: solid;
         border-color: #0000 #0000 #0000 #a6a6a6;
         border-image: initial;
         width: 4px !important;
         height: 0;
-        margin: 8px 4px 0 0;
+        margin: 7px 5px 0 0;
         transform: rotate(90deg);
       }
 
@@ -104,7 +106,7 @@ export default {
         position: absolute;
         left: 8px;
         width: 10px;
-        transition: .1s;
+        transition: .3s;
       }
 
       .link-item-name {
@@ -116,9 +118,6 @@ export default {
       flex-direction: column;
       margin-left: 18px;
       transition: .5s;
-
-      .link-item {
-      }
     }
 
     .clicked {

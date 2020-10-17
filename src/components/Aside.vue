@@ -1,14 +1,12 @@
 <template>
-  <div class="resize" :style="{'flex-basis': resize.width + 'px'}"
-    @mousedown="resizeDown($event)" @mousemove="resizeMove($event)"
-       @mouseleave="resizeUp" @mouseout="resizeUp" @mouseup="resizeUp"
-       @mouseover="resizeUp">
-    <component v-if="''!==component" :treeArr="linkArr" :is="component"
-               @linkClick="linkClick" @linkContextMenu="linkContextMenu"></component>
+  <div class="resize" :style="{'flex-basis': dragState.width + 'px'}" ref="asideEl"
+        @mousedown="handleMouseDown($event)">
+      <component v-if="''!==component" :treeArr="linkArr" :is="component"
+                 @linkClick="linkClick" @linkContextMenu="linkContextMenu"></component>
   </div>
 </template>
 <script>
-import {ref, reactive} from 'vue';
+import {ref, reactive, computed, nextTick} from 'vue';
 import {mysqlCore} from '../mysql-core';
 import {query, SQL_DEF} from '../util-mysql';
 import setting from '../../setting.json';
@@ -19,8 +17,8 @@ export default {
   data () {
     return {
       /**
-       * 同 {@link ../ Index组件data.linkArr}
-       */
+         * 同 {@link ../ Index组件data.linkArr}
+         */
       linkArr: [],
       focusItem: {
         'id': '1.1', 'type': 'db', 'title': '',
@@ -37,9 +35,8 @@ export default {
         'connection': '', 'children': '',
       },
       component: '',
-      resize: {
-        begin: 0, end: 0, oldWidth: 200, width: 200,
-      },
+      dragging: false,
+      dragState: {startMouseLeft: '', startLeft: '', width: 200},
     };
   },
   created () {
@@ -76,8 +73,8 @@ export default {
   },
   methods: {
     /**
-     * 初始化：获取当前存储的所有链接
-     */
+       * 初始化：获取当前存储的所有链接
+       */
     initLinkList () {
       let _this = this;
       _this.$message.send(setting.path.disk.get.path, {key: setting.disk.key.link}).then((res) => {
@@ -89,31 +86,30 @@ export default {
       });
     },
     /**
-     * 更新链接列表
-     * @param {Array} linkArr
-     */
+       * 更新链接列表
+       * @param {Array} linkArr
+       */
     updateLinkList () {
       let _this = this;
       _this.component = '';
-      _this.linkArr = mysqlCore.getLink();
-      console.error(_this.linkArr);
+      _this.linkArr = computed(() => mysqlCore.getLink());
       _this.component = 'Tree';
     },
     /**
-     * 左键单击链接元素
-     * @param {Object} item 链接对象
-     * @param {number} index 所在数组下标
-     */
+       * 左键单击链接元素
+       * @param {Object} item 链接对象
+       * @param {number} index 所在数组下标
+       */
     linkClick (item, index) {
       let _this = this;
       _this.resetLinkClicked(_this.linkArr);
       item.state.clicked = true;
     },
     /**
-     * 右键单击链接元素
-     * @param {Object} item 链接对象
-     * @param {number} index 所在数组下标
-     */
+       * 右键单击链接元素
+       * @param {Object} item 链接对象
+       * @param {number} index 所在数组下标
+       */
     linkContextMenu (item, index) {
       let _this = this;
       _this.resetLinkClicked(_this.linkArr);
@@ -129,32 +125,32 @@ export default {
           item: JSON.parse(JSON.stringify(postItem)),
         });
       } else {
-        item.type === 'db' ?
-          _this.$message.send(setting.path.menu.open.path, {
-            params: setting.path.menu.open.params.db,
-            item: JSON.parse(JSON.stringify(postItem)),
-          }) :
-          _this.$message.send(setting.path.menu.open.path, {
-            params: setting.path.menu.open.params.table,
-            item: JSON.parse(JSON.stringify(postItem)),
-          });
+          item.type === 'db' ?
+              _this.$message.send(setting.path.menu.open.path, {
+                params: setting.path.menu.open.params.db,
+                item: JSON.parse(JSON.stringify(postItem)),
+              }) :
+              _this.$message.send(setting.path.menu.open.path, {
+                params: setting.path.menu.open.params.table,
+                item: JSON.parse(JSON.stringify(postItem)),
+              });
       }
       postItem = '';
     },
     /**
-     * 重置链接点击状态
-     * @param {Array} linkArr
-     */
+       * 重置链接点击状态
+       * @param {Array} linkArr
+       */
     resetLinkClicked (linkArr) {
       let _this = this;
       linkArr.filter((one) => {
-        one.state.clicked ? one.state.clicked = false : '';
-        one.children && 0 < one.children.length ? _this.resetLinkClicked(one.children) : '';
+          one.state.clicked ? one.state.clicked = false : '';
+          one.children && 0 < one.children.length ? _this.resetLinkClicked(one.children) : '';
       });
     },
     /**
-     * 建立链接
-     */
+       * 建立链接
+       */
     connectionOpen () {
       let _this = this;
       let focusId = _this.focusItem.item.id.split('.')[0];
@@ -189,8 +185,8 @@ export default {
       });
     },
     /**
-     * 断开链接
-     */
+       * 断开链接
+       */
     connectionClose () {
       let _this = this;
       mysqlCore.closeLink({id: _this.focusItem.item.id});
@@ -198,30 +194,66 @@ export default {
       _this.updateLinkList();
     },
     /**
-     * 初始化 数据库 库内表 列表
-     * @param {Object} item 选中的库
-     * @param {Array} res 返回的结果
-     */
+       * 初始化 数据库 库内表 列表
+       * @param {Object} item 选中的库
+       * @param {Array} res 返回的结果
+       */
     initDBTable (item, res) {
-      let dbItem;
+      let addTable = (item, dbItem) => {
+        let id = dbItem.id = item.id + '.' + (item.children.length === 0 ? '1' : item.children.length + 1);
+        item.children?.map((one) => {
+          if (one.title === dbItem.title) {
+            dbItem.id = one.id;
+            one = dbItem;
+          }
+          return one;
+        });
+          id === dbItem.id ? item.children.push(dbItem) : '';
+          mysqlCore.setTable({id: dbItem.id, item: dbItem});
+      };
       for (let i = 0; i < res.length; i++) {
         switch (res[i]['TABLE_TYPE']) {
           case 'BASE TABLE':
-            dbItem = {
-              id: item.children[0].id + '.' + (item.children[0].children.length === 0 ? '1' : item.children[0].children.length + 1),
-              type: setting.dist.table.type.table.val, title: res[i]['TABLE_NAME'],
+            addTable(item.children[0], {
+              id: '', type: setting.dist.table.type.table.val, title: res[i]['TABLE_NAME'],
               state: {clicked: false, open: false},
-            };
-            item.children[0].children.push(dbItem);
-            mysqlCore.setTable({id: dbItem.id, item: dbItem});
+            });
             break;
           case 'VIEW':
-            dbItem = {
-              id: item.children[1].id + '.' + (item.children[1].children.length === 0 ? '1' : item.children[1].children.length + 1),
-              type: setting.dist.table.type.views.val, title: res[i]['TABLE_NAME'],
+            addTable(item.children[1], {
+              id: '', type: setting.dist.table.type.views.val, title: res[i]['TABLE_NAME'],
               state: {clicked: false, open: false},
-            };
-            item.children[1].children.push(dbItem);
+            });
+            break;
+          case 'SYSTEM VIEW':
+            addTable(item.children[1], {
+              id: '', type: setting.dist.table.type.views.val, title: res[i]['TABLE_NAME'],
+              state: {clicked: false, open: false},
+            });
+            break;
+          case 'Function':
+            addTable(item.children[2], {
+              id: '', type: setting.dist.table.type.views.val, title: res[i]['TABLE_NAME'],
+              state: {clicked: false, open: false},
+            });
+            break;
+          case 'EVENT':
+            addTable(item.children[3], {
+              id: '', type: setting.dist.table.type.views.val, title: res[i]['TABLE_NAME'],
+              state: {clicked: false, open: false},
+            });
+            break;
+          case 'QUERY':
+            addTable(item.children[4], {
+              id: '', type: setting.dist.table.type.views.val, title: res[i]['TABLE_NAME'],
+              state: {clicked: false, open: false},
+            });
+            break;
+          case 'BACKUP':
+            addTable(item.children[5], {
+              id: '', type: setting.dist.table.type.views.val, title: res[i]['TABLE_NAME'],
+              state: {clicked: false, open: false},
+            });
             break;
           default:
             break;
@@ -229,8 +261,8 @@ export default {
       }
     },
     /**
-     * 打开库
-     */
+       * 打开库
+       */
     dbOpen () {
       let _this = this;
       let focusId = _this.focusItem.item.id.split('.')[0];
@@ -238,30 +270,27 @@ export default {
         query(connection, SQL_DEF.ALL_TABLE, [_this.focusItem.item['title']]).then((res) => {
           _this.initDBTable(_this.focusItem.item, res);
           mysqlCore.setDbState({id: _this.focusItem.item.id, stateItem: ['linked', 'open'], to: true});
-          // _this.updateLinkList();
+          nextTick(() => {
+            _this.updateLinkList();
+          });
         });
       });
-      // _this.$emit('getConnection', _this.focusItem.item.id.split('.')[0], (id, connection) => {
-      //   _this.focusItem.item.state.linked = _this.focusItem.item.state.open = true;
-      //   // 当前链接包含的库
-      //   _this.$mysql.$query(connection, _this.$mysql.$SQL_DEF.ALL_TABLE, [_this.focusItem.item['title']]).then((res) => {
-      //     _this.initDBTable(_this.focusItem.item, res);
-      //   });
-      // });
     },
     /**
-     * 关闭库
-     */
+       * 关闭库
+       */
     dbClose () {
       let _this = this;
-      _this.focusItem.item.state.linked = _this.focusItem.item.state.open = false;
+      mysqlCore.setDbState({id: _this.focusItem.item.id, stateItem: ['linked', 'open'], to: false});
+      _this.updateLinkList();
     },
     /**
-     * 打开表
-     */
+       * 打开表
+       */
     tableOpen () {
       let _this = this;
-      _this.focusItem.item.state.linked = _this.focusItem.item.state.open = true;
+      mysqlCore.setDbState({id: _this.focusItem.item.id, stateItem: ['linked', 'open'], to: true});
+      _this.updateLinkList();
       let no = new Date().getTime();
       _this.$message.$emit(setting.path.root.creat.path, {params: {name: _this.focusItem.item.title, table: 'query', no: no}});
       _this.$message.on(setting.path.action.update.tableDef.path + '/' + no + 'get', () => {
@@ -280,44 +309,47 @@ export default {
       });
     },
     /**
-     * 关闭表
-     */
+       * 关闭表
+       */
     tableClose () {
       let _this = this;
-      _this.focusItem.item.linked = _this.focusItem.item.state.open = false;
+      mysqlCore.setDbState({id: _this.focusItem.item.id, stateItem: ['linked', 'open'], to: false});
+      _this.updateLinkList();
     },
     /**
      * 表头 缩放 左键按下
-     * @param $event
-     * @param index
-     * @param item
+     * @param event
      */
-    resizeDown ($event) {
-      this.resize.begin = Number($event.clientX);
-      this.resize.oldWidth = this.resize.width;
-    },
-    /**
-     * 表头 缩放 鼠标移除操作区域
-     * 移动时动态处理缩放的宽度
-     * @param $event
-     */
-    resizeMove ($event) {
-      if (this.resize.begin !== 0) {
-        this.resize.end = Number($event.clientX);
-        if (200 > (this.resize.oldWidth + this.resize.end - this.resize.begin) ||
-            500 < (this.resize.oldWidth + this.resize.end - this.resize.begin)) {
-          return;
-        }
-        this.resize.width = this.resize.oldWidth + this.resize.end - this.resize.begin;
-      }
-    },
-    /**
-     * 表头 缩放 鼠标抬起
-     * @param $event
-     */
-    resizeUp () {
-      if (this.resize.begin !== 0) {
-        this.resize.begin = 0;
+    handleMouseDown (event) {
+      const columnRect = this.$refs.asideEl;
+      const widthRank = [200, 500];
+
+      this.dragState = {
+        startMouseLeft: event.clientX,
+        startLeft: columnRect.clientWidth,
+      };
+      this.dragging = (this.dragState.startMouseLeft >= (this.dragState.startLeft - 15)) &&
+          (this.dragState.startMouseLeft <= (this.dragState.startLeft + 6));
+
+      document.onselectstart = () => false;
+      document.ondragstart = () => false;
+
+      const mousemove = (event) => {
+        const deltaLeft = (event.clientX - this.dragState.startMouseLeft);
+        const proxyLeft = this.dragState.startLeft + deltaLeft;
+
+        this.dragState.width = widthRank[0] > proxyLeft ? widthRank[0] : widthRank[1] < proxyLeft ? widthRank[1] : proxyLeft;
+      };
+      const mouseup = () => {
+        document.removeEventListener('mousemove', mousemove);
+        document.removeEventListener('mouseup', mouseup);
+        document.onselectstart = null;
+        document.ondragstart = null;
+        this.dragging = false;
+      };
+      if (this.dragging) {
+        document.addEventListener('mousemove', mousemove);
+        document.addEventListener('mouseup', mouseup);
       }
     },
   },
@@ -331,5 +363,8 @@ export default {
     cursor: col-resize;
     width: 16px;
     height: 100%;
+  }
+  ::-webkit-scrollbar-track {
+    margin-top: 0;
   }
 </style>

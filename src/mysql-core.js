@@ -201,7 +201,6 @@ const myStore = {
       if (!(id instanceof String || Number)) {
         throw new Error('Type Error');
       }
-      console.error(_store.linkArr);
       let linkItem = '';
       _store.linkArr.filter((one) => {
         if (one.id == (id + '.').split('.')[0]) {
@@ -407,7 +406,7 @@ const prepareLink = ({obj}) => {
   }
 };
 const prepareDb = ({obj}) => {
-  let child; console.error(obj);
+  let child;
   if (obj instanceof Array) {
     return obj.map((one) => {
       child = myStore.store.getTable({id: one.id});

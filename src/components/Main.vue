@@ -11,8 +11,8 @@
     </div>
     <div class="content">
       <div class="menu">
-        <div class="menu-group" v-for="(menuGroup,index) in menus">
-          <div class="menu-group" v-for="(menuItem,index) in menuGroup">
+        <div class="menu-group" v-for="(menuGroup) in menus">
+          <div class="menu-group" v-for="(menuItem) in menuGroup">
             <div class="menu-item" v-if="menuItem.length>0" v-for="item in menuItem"
                  :title="item.title" v-html="icon[item.icon]['18']"></div>
             <div class="menu-item" v-else>
@@ -26,9 +26,7 @@
       </div>
       <div class="table">
         <div class="table-scroll" v-for="item in tabs" v-show="item.active" :key="item.type + item.no">
-          <component v-if="''!==item.component" :tableArr="item.tableData" :is="item.component"
-                     @getLinkArr="getLinkArr" @connectLink="connectLink" @getConnection="getConnection"
-                     @runSql="runSql"></component>
+          <component v-if="''!==item.component" :tableArr="item.tableData" :is="item.component"></component>
         </div>
       </div>
     </div>
@@ -38,7 +36,8 @@
 import setting from '../../setting.json';
 import Table from './Table.vue';
 import Query from './Query.vue';
-import {computed} from 'vue';
+import {mysqlCore} from '../mysql-core';
+import {query, SQL_DEF} from '../util-mysql';
 
 export default {
   components: {'Table': Table, 'Query': Query},
@@ -176,8 +175,8 @@ export default {
     let _this = this;
     _this.menus = [_this.menusData.table, _this.menusData.def];
     /**
-       * 前往指定tab页
-       */
+     * 前往指定tab页
+     */
     _this.$message.$on(setting.path.root.go.path, (res) => {
       _this.clickTab(_this.tabs.find((item) => {
         if (res.params.path == item.no) {
@@ -187,8 +186,8 @@ export default {
       }));
     });
     /**
-       * 新建tab页
-       */
+     * 新建tab页
+     */
     _this.$message.on(setting.path.root.creat.path, (res) => {
       if ('newQuery' === res.params.table) {
         _this.tabs.push({
@@ -210,7 +209,7 @@ export default {
     getIconDom (icon) {
       return this.icon[icon] && this.icon[icon]['16'].indexOf('svg') !== -1 ? this.icon[icon]['16'] : this.icon[icon];
     },
-    clickTab (item, index) {
+    clickTab (item) {
       let _this = this;
       _this.tabs.find((tar) => {
         _this.$nextTick( () => {
@@ -223,7 +222,7 @@ export default {
       _this.$nextTick(() => {
         _this.menus = [_this.menusData[item.table], _this.menusData.def];
         item.table === 'newQuery' ? _this.menus.splice(1, 1) : '';
-        item.component ==='' ? item.component = 'Query' : '';
+        (item.table === 'newQuery' && item.component === '') ? item.component = 'Query' : '';
       });
       _this.item = item || '';
       if (_this.item?.tableData?.tbody?.length === 0) {
@@ -243,9 +242,8 @@ export default {
     },
     updateTableData (item, tableItem) {
       console.error(item);
-      let _this = this;
-      _this.$emit('getConnection', tableItem.id.split('.')[0], (id, connection) => {
-        _this.$mysql.$query(connection, _this.$mysql.$SQL_DEF.SHOW_COLUMNS, [tableItem.parent['title'], tableItem['title']]).then((res) => {
+      mysqlCore.getConnection({id: tableItem.id.split('.')[0]}).then((connection) => {
+        query(connection, SQL_DEF.SHOW_COLUMNS, [tableItem.parent['title'], tableItem['title']]).then((res) => {
           item.tableData.thead = [];
           if (res && res.length > 0) {
             // Default: null
@@ -259,30 +257,10 @@ export default {
             }
           }
         });
-        _this.$mysql.$query(connection, _this.$mysql.$SQL_DEF.SELECT_ALL_FROM_TABLE, [tableItem.parent['title'], tableItem['title']]).then((res) => {
+        query(connection, SQL_DEF.SELECT_ALL_FROM_TABLE, [tableItem.parent['title'], tableItem['title']]).then((res) => {
           item.tableData.tbody = res || [];
           item.component = 'Table';
         });
-      });
-    },
-    getLinkArr (cb) {
-      this.$emit('getLinkArr', cb);
-    },
-    connectLink ({id, cb}) {
-      this.$emit('connectLink', id, cb);
-    },
-    getConnection (id, cb) {
-      this.$emit('getConnection', id, cb);
-    },
-    runSql ({id, sql, sqlParams, cb}) {
-      let _this = this;
-      _this.$emit('getConnection', id, (id, connection) => {
-        cb(connection);
-        // _this.$mysql.$query(connection, sql, sqlParams).then((res) => {
-        //   cb(res);
-        // }).catch((res) => {
-        //   cb(res);
-        // });
       });
     },
   },
