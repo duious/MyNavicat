@@ -1,6 +1,5 @@
 <template>
-  <div class="newQuery" @mouseleave="resizeUp" @mouseout="resizeUp" @mouseup="resizeUp"
-       @mouseover="resizeUp" @mousemove="resizeMove($event)">
+  <div class="newQuery">
     <div class="head-div">
       <component class="menu-item link-div" :list="linkArr.linkArr" @clickLinkItem="clickLinkItem"
                  v-if="''!==linkArr.component" :is="linkArr.component"></component>
@@ -22,9 +21,10 @@
     <div class="body-div">
       <div class="edit-div" ref="editTextarea"></div>
     </div>
-    <div class="foot-div resize" :style="{'height': resize.height + 'px'}" v-show="''!==tab.component"
-         @mousedown="resizeDown($event)" @mousemove="resizeMove($event)">
-      <component :tab="tab.tabData" v-if="''!==tab.component" :is="tab.component" @clickTabs="clickTabs"></component>
+    <div class="foot-div" v-if="''!==tab.component">
+      <Resizer :type="'top'" :rank="[180]" style="width: 100%;">
+        <component :tab="tab.tabData" v-if="''!==tab.component" :is="tab.component" @clickTabs="clickTabs"></component>
+      </Resizer>
     </div>
   </div>
 </template>
@@ -33,12 +33,13 @@ import * as monacoEditor from 'monaco-editor';
 import {reactive, ref, onMounted} from 'vue';
 import Selector from './Selector.vue';
 import Tabs from './Tabs.vue';
+import Resizer from './Resizer.vue';
 import {mysqlCore} from '../mysql-core';
 import {SQL_DEF, query} from '../util-mysql';
 import setting from '../../setting.json';
 
 export default {
-  components: {'Selector': Selector, 'Tabs': Tabs},
+  components: {'Selector': Selector, 'Tabs': Tabs, 'Resizer': Resizer},
   props: {},
   setup (props, context) {
     /**
@@ -452,41 +453,8 @@ export default {
     const clickTabs = (item, cb) => {
 
     };
-
-    const resize = reactive({
-      begin: 0, end: 0, oldHeight: 260, height: 260,
-    });
-
-    /**
-     * 表头 缩放 左键按下
-     * @param $event
-     */
-    const resizeDown = ($event) => {
-      resize.begin = Number($event.clientY);
-      resize.oldHeight = resize.height;
-    };
-    /**
-     * 表头 缩放 鼠标移除操作区域
-     * 移动时动态处理缩放的宽度
-     * @param $event
-     */
-    const resizeMove = ($event) => {
-      if (resize.begin !==0) {
-        resize.end = Number($event.clientY);
-        resize.height = resize.oldHeight + resize.begin - resize.end;
-      }
-    };
-    /**
-     * 表头 缩放 鼠标抬起
-     * @param $event
-     */
-    const resizeUp = () => {
-      if (resize.begin !==0) {
-        resize.begin = 0;
-      }
-    };
     return {linkArr, dbArr, clickLinkItem, tab, editTextarea, queryData, sqlData, clickRun, stopRunSql, clickTabs,
-      resize, resizeDown, resizeMove, resizeUp};
+    };
   },
 };
 </script>
@@ -546,15 +514,6 @@ export default {
     .foot-div {
       position: relative;
       transition: .2s;
-    }
-
-    .resize::before{
-      content: ' ';
-      position: absolute;
-      top: -6px;
-      cursor: row-resize;
-      width: 100%;
-      height: 16px;
     }
   }
 </style>

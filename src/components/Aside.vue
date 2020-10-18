@@ -1,9 +1,8 @@
 <template>
-  <div class="resize" :style="{'flex-basis': dragState.width + 'px'}" ref="asideEl"
-        @mousedown="handleMouseDown($event)">
-      <component v-if="''!==component" :treeArr="linkArr" :is="component"
-                 @linkClick="linkClick" @linkContextMenu="linkContextMenu"></component>
-  </div>
+  <Resizer :type="'right'" :rank="[200,500]">
+    <component v-if="''!==component" :treeArr="linkArr" :is="component"
+               @linkClick="linkClick" @linkContextMenu="linkContextMenu"></component>
+  </Resizer>
 </template>
 <script>
 import {ref, reactive, computed, nextTick} from 'vue';
@@ -11,9 +10,10 @@ import {mysqlCore} from '../mysql-core';
 import {query, SQL_DEF} from '../util-mysql';
 import setting from '../../setting.json';
 import Tree from './Tree.vue';
+import Resizer from './Resizer.vue';
 
 export default {
-  components: {'Tree': Tree},
+  components: {'Tree': Tree, 'Resizer': Resizer},
   data () {
     return {
       /**
@@ -316,54 +316,10 @@ export default {
       mysqlCore.setDbState({id: _this.focusItem.item.id, stateItem: ['linked', 'open'], to: false});
       _this.updateLinkList();
     },
-    /**
-     * 表头 缩放 左键按下
-     * @param event
-     */
-    handleMouseDown (event) {
-      const columnRect = this.$refs.asideEl;
-      const widthRank = [200, 500];
-
-      this.dragState = {
-        startMouseLeft: event.clientX,
-        startLeft: columnRect.clientWidth,
-      };
-      this.dragging = (this.dragState.startMouseLeft >= (this.dragState.startLeft - 15)) &&
-          (this.dragState.startMouseLeft <= (this.dragState.startLeft + 6));
-
-      document.onselectstart = () => false;
-      document.ondragstart = () => false;
-
-      const mousemove = (event) => {
-        const deltaLeft = (event.clientX - this.dragState.startMouseLeft);
-        const proxyLeft = this.dragState.startLeft + deltaLeft;
-
-        this.dragState.width = widthRank[0] > proxyLeft ? widthRank[0] : widthRank[1] < proxyLeft ? widthRank[1] : proxyLeft;
-      };
-      const mouseup = () => {
-        document.removeEventListener('mousemove', mousemove);
-        document.removeEventListener('mouseup', mouseup);
-        document.onselectstart = null;
-        document.ondragstart = null;
-        this.dragging = false;
-      };
-      if (this.dragging) {
-        document.addEventListener('mousemove', mousemove);
-        document.addEventListener('mouseup', mouseup);
-      }
-    },
   },
 };
 </script>
 <style scoped lang="scss">
-  .resize::after {
-    content: ' ';
-    position: absolute;
-    right: -6px;
-    cursor: col-resize;
-    width: 16px;
-    height: 100%;
-  }
   ::-webkit-scrollbar-track {
     margin-top: 0;
   }
