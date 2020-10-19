@@ -6,6 +6,7 @@
 <script>
 import {reactive, ref, onMounted} from 'vue';
 const typeObj = {'left': 'width', 'right': 'width', 'top': 'height', 'bottom': 'height'};
+const debug = false;
 export default {
   props: {
     resizeData: Object,
@@ -19,13 +20,11 @@ export default {
     rank: {
       type: Array,
       required: true,
-      default: [0],
       validator: (value) => (value.length >= 0 || value.length <= 2),
     },
     slotDiv: String,
   },
   setup (props, context) {
-    const debug = true;
     if (debug) {
       console.log('debug resizer=>props:', JSON.stringify(props));
     }
@@ -56,7 +55,7 @@ export default {
       }
     };
 
-    let offsetData = {top: 0, left: 0};
+    let offsetData = reactive({top: 0, left: 0});
     let columnRect;
     // 上右下左
     let mouseRank;
@@ -66,6 +65,9 @@ export default {
       offsetData.top = columnRect.offsetTop;
       offsetData.left = columnRect.offsetLeft;
       initOffset(columnRect.offsetParent);
+      if (debug) {
+        console.log('debug resizer=>offsetData:', JSON.stringify(offsetData));
+      }
       dragState.startWidth = columnRect.clientWidth;
       dragState.startHeight = columnRect.clientHeight;
       mouseRank = [];
@@ -87,10 +89,10 @@ export default {
     };
 
     const initOffset = (dom) => {
+      offsetData.top += dom?.offsetTop;
+      offsetData.left += dom?.offsetLeft;
       if (dom?.nodeName !== 'BODY') {
-        offsetData.top += dom.offsetTop;
-        offsetData.left += dom.offsetLeft;
-        return initOffset( dom.offsetParent);
+        (dom && dom.offsetParent) ? initOffset(dom.offsetParent) : '';
       }
     };
 
@@ -120,6 +122,7 @@ export default {
      * @param {event} event
      */
     const handleMouseDown = (event) => {
+      columnRect = resizeEl.value;
       dragState.startMouseX = event.clientX;
       dragState.startMouseY = event.clientY;
       dragState.startWidth = columnRect.clientWidth;
