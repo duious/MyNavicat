@@ -177,9 +177,9 @@ export default {
               'children': '',
             };
             _this.focusItem.item.children.push(resItem);
-            mysqlCore.setDb({id: focusId, item: resItem});
+            mysqlCore.setDb({id: resItem.id, item: resItem});
           }
-          mysqlCore.setLinkState({id: focusId, stateItem: 'open', to: true});
+          mysqlCore.setLinkState({id: focusId, stateItem: ['open', 'linked'], to: true});
           _this.updateLinkList();
         });
       });

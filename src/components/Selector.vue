@@ -28,7 +28,7 @@ export default {
      */
     const selector = ref(null);
     const selectData = reactive({
-      list: ref(props.list),
+      list: props.list,
       selecting: false,
       icon: setting.icon.action.select,
     });
@@ -48,12 +48,16 @@ export default {
     };
 
     const itemClick = (item, index) => {
+      let type = 'db';
       selectData.list.filter((one) => {
         one.state.clicked = false;
+        if (one?.id?.indexOf('.') === -1) {
+          type = 'link';
+        }
       });
       item.state.clicked = true;
       selectData.selecting = false;
-      context.emit('clickLinkItem', item);
+      context.emit('clickLinkItem', item, type);
     };
 
     onUnmounted(() => {
@@ -65,6 +69,12 @@ export default {
      * @param {event} e 点击事件
      */
     const blurSelector = (e) => {
+      if (selectData.selecting === true) {
+        selectData.list.filter((one) => {
+          one.state.checked ? one.state.clicked = true : one.state.clicked = false;
+          one.state.checked ? itemClick(one) : '';
+        });
+      }
       selectData.selecting === true ? (e.target != selector.value ? selectData.selecting = false : '') : e;
     };
     return {selector, selectData, selectItem, itemClick};
@@ -105,6 +115,7 @@ export default {
       padding-left: 18px;
       box-shadow: #434343 0 0 2px 1px;
       position: absolute;
+      overflow-x: hidden;
       z-index: 1;
       border-radius: 4px;
       left: -12px;

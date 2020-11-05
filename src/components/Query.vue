@@ -5,9 +5,9 @@
                  v-if="''!==linkArr.component" :is="linkArr.component"></component>
       <component class="menu-item link-div" :list="dbArr.dbArr" @clickLinkItem="clickLinkItem"
                  v-if="''!==dbArr.component" :is="dbArr.component"></component>
-      <div class="menu-item" @click="clickRun" :class="!sqlData.running?'clickable':''">
-        <i v-show="!sqlData.running" v-html="queryData.icon.run['18']"></i>
-        <i v-show="sqlData.running" v-html="queryData.icon.running['18']"></i>
+      <div class="menu-item" @click="clickRun" :class="dbArr.id !== '' ? !sqlData.running ? 'clickable' : '' : ''">
+        <i v-show="dbArr.id !== '' ? !sqlData.running : false" v-html="queryData.icon.run['18']"></i>
+        <i v-show="dbArr.id !== '' ? sqlData.running : true" v-html="queryData.icon.running['18']"></i>
       </div>
       <div class="menu-item" @click="stopRunSql" :class="sqlData.running?'clickable':''">
         <i v-show="sqlData.running" v-html="queryData.icon.stop['18']"></i>
@@ -22,7 +22,7 @@
       <div class="edit-div" ref="editTextarea"></div>
     </div>
     <div class="foot-div" v-if="''!==tab.component">
-      <Resizer :type="'top'" :rank="[180]" style="width: 100%;">
+      <Resizer v-if="''!==tab.component" :type="'top'" :rank="[180]" style="width: 100%;">
         <component :tab="tab.tabData" v-if="''!==tab.component" :is="tab.component" @clickTabs="clickTabs"></component>
       </Resizer>
     </div>
@@ -107,22 +107,31 @@ export default {
     /**
      * 初始化，获取原始数据
      */
-    linkArr.linkArr = mysqlCore.getLink().map((one) => {
-      // 过滤掉不需要的
-      let {id, state, title, type} = one;
-      return {id, state, title, type};
-    });
-    linkArr.linkArr = JSON.parse(JSON.stringify(linkArr.linkArr));// 去反应
-    linkArr.linkArr.filter((one) => {
-      one.state.clicked = one.state.linked = false;
-    });
-    linkArr.component = 'Selector';
+    const initLinkArr = () => {
+      linkArr.linkArr = JSON.parse(JSON.stringify(mysqlCore.getLink().map((one) => {
+        // 过滤掉不需要的
+        let {id, state, title, type} = one;
+        return JSON.parse(JSON.stringify({id, state, title, type}));
+      })));// 去反应
+      linkArr.linkArr.filter((one) => {
+        one.state.clicked = one.state.linked = false;
+      });
+      linkArr.component = 'Selector';
+    };
+
     /**
      * 链接更改
      * @param {Object} item 选中的链接对象
+     * @param {String} type selector可选列表类型
      */
-    const clickLinkItem = (item) => {
-      if (item?.id?.indexOf('.') === -1) {
+    const clickLinkItem = (item, type) => {
+      if (linkArr.id !== '') {
+        (type === 'link' && linkArr.id !== item.id) ? linkArr.id = '' : '';
+        type === 'db' ? dbArr.id = '' : '';
+      } else {
+        dbArr.id = '';
+      }
+      if (type === 'link' && linkArr.id !== item.id && item?.id?.indexOf('.') === -1) {
         mysqlCore.getConnection({id: item.id}).then((connection) => {
           query(connection, SQL_DEF.SCHEMA_NAME).then((res) => {
             let resItem = '';
@@ -144,25 +153,29 @@ export default {
                 },
               };
               dbArr.dbArr.push(resItem);
-              mysqlCore.setDb({id: item.id, item: resItem});
             }
-            dbArr.dbArr = dbArr.dbArr.map((one) => {
+            dbArr.dbArr = JSON.parse(JSON.stringify(dbArr.dbArr.map((one) => {
               // 过滤不需要的
               let {id, state, title, type} = one;
               return {id, state, title, type};
-            });
-            dbArr.dbArr = JSON.parse(JSON.stringify(dbArr.dbArr));// 去反应
+            })));// 去反应
             dbArr.component = 'Selector';
           });
         });
       }
-      linkArr.linkArr.find((one) => {
-        // 标记选中的
-        if (item?.id == one?.id) {
-          one.state.clicked = true;
-          linkArr.id = one.id;
-        }
-      });
+      if (type === 'link') {
+        linkArr.linkArr.find((one) => {
+          // 标记选中的
+          if (item?.id == one?.id) {
+            one.state.clicked = true;
+            linkArr.id = one.id;
+          }
+        });
+      }
+      if (type === 'link' && linkArr.id == undefined) {
+        dbArr.component = '';
+        dbArr.dbArr = [];
+      }
       dbArr.dbArr.find((one) => {
         // 标记选中的
         if (item?.id == one?.id) {
@@ -170,6 +183,8 @@ export default {
           dbArr.id = one.id;
         }
       });
+      linkArr.id ? '' : linkArr.id = dbArr.id = '';
+      dbArr.id ? '' : dbArr.id = '';
     };
     onMounted(() => {
       // 初始化编辑器实例
@@ -380,11 +395,6 @@ export default {
       sqlData.val.substring(sqlData.val.length -1) === ';' ? '' : sqlData.val += ';';
     };
 
-    // const serpromise = (arr) => {
-    //   arr.reduce((pre, next, index, carr)=>{
-    //     return pre.then(next)
-    //   }, Promise.resolve())
-    // };
     let change =[[0, 0, 0], [0, 0, 0]];
     const setSqlSessionState = (index, res) => {
       change[index][0] = res.find((one) => {
@@ -406,26 +416,22 @@ export default {
 
     const clickRun = () => {
       // 防止重复执行sql语句
-      if (sqlData.running) {
+      if (dbArr.id === '' || sqlData.running) {
         return;
       }
       sqlData.running = true;
       initSql();
       getConnection(dbArr.id).then((connection) => {
         query(connection, SQL_DEF.SET_PROFILING, [1]).then((res) => {
-          console.log(res);
           query(connection, 'SHOW STATUS;', []).then((res) => {
             setSqlSessionState(0, res);
             query(connection, sqlData.val, []).then((res) => {
-              console.log(res);
               showRes(0, res);
               query(connection, 'SHOW STATUS;', []).then((res) => {
                 setSqlSessionState(1, res);
                 query(connection, SQL_DEF.SQL_SUM_TIME, []).then((res) => {
                   sqlData.sumTime = (res[0]['SUM_DURATION'] * 1000 + '').replace(/([0-9]+.[0-9]{3})[0-9]*/, '$1');
                   query(connection, SQL_DEF.SQL_PERFORMANCE, [1]).then((res) => {
-                    console.log(change);
-                    console.log(res);
                     showRes(1, res);
                     sqlData.running = false;
                   });
@@ -453,6 +459,8 @@ export default {
     const clickTabs = (item, cb) => {
 
     };
+
+    initLinkArr();
     return {linkArr, dbArr, clickLinkItem, tab, editTextarea, queryData, sqlData, clickRun, stopRunSql, clickTabs,
     };
   },

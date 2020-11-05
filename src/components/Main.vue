@@ -24,8 +24,8 @@
           </div>
         </div>
       </div>
-      <div class="table">
-        <div class="table-scroll" v-for="item in tabs" v-show="item.active" :key="item.type + item.no">
+      <div class="content-div">
+        <div class="tab-content" v-for="item in tabs" v-show="item.active" :key="item.type + item.no">
           <component v-if="''!==item.component" :tableArr="item.tableData" :is="item.component"></component>
         </div>
       </div>
@@ -241,7 +241,6 @@ export default {
       _this.clickTab(_this.tabs[_this.tabs.length-1], _this.tabs.length-1);
     },
     updateTableData (item, tableItem) {
-      console.error(item);
       mysqlCore.getConnection({id: tableItem.id.split('.')[0]}).then((connection) => {
         query(connection, SQL_DEF.SHOW_COLUMNS, [tableItem.parent['title'], tableItem['title']]).then((res) => {
           item.tableData.thead = [];
@@ -274,7 +273,7 @@ export default {
     flex: 1 1 auto;
     overflow-x: hidden;
 
-    .tab, .content, .menu, .menu-group, .menu-item, .table, .tab-item, .tab-item-icon, .tab-item-title {
+    .tab, .content, .menu, .menu-group, .menu-item, .content-div, .tab-item, .tab-item-icon, .tab-item-title {
       display: flex;
     }
 
@@ -395,17 +394,17 @@ export default {
         }
       }
 
-      .table {
+      .content-div {
         width: 100%;
         height: auto;
         min-height: 343px;
         flex: 1 1 auto;
         background-color: #202125;
 
-        .table-scroll {
+        .tab-content {
           width: 100%;
           height: 100%;
-          overflow: auto;
+          overflow: hidden;
         }
       }
     }

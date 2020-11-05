@@ -8,44 +8,46 @@ const emitter = mitt();
 const message = Object.assign({send: '', receive: '', app: {}}, emitter);
 message.$on = message.on;
 message.$emit = message.emit;
+const debug = false;
 
 /**
  * 消息总线 收发
+ * @param {String} url 请求地址
+ * @param {Object} params 请求参数
  */
-message.send = function (url, params) {
-  return new Promise((resolve, reject) => {
-    /**
-     * 发送前预检
-     */
-    url = url.split('/');
+message.send = (url, params) => new Promise((resolve, reject) => {
+  // 发送前预检
+  url = url.split('/');
     !!setting.path[url[0]] ?
-      !!setting.path[url[0]][url[1]] ?
-        resolve({url: url.join('/'), params: params}) :
-        reject({code: -1, msg: '消息不合规！'}) : reject({code: -1, msg: '消息不合规！'});
-  }).then((req) => new Promise((resolve, reject) => {
-    console.log('C:req:', req);
+        !!setting.path[url[0]][url[1]] ?
+            resolve({url: url.join('/'), params: params}) :
+            reject({code: -1, msg: '消息不合规！'}) :
+        reject({code: -1, msg: '消息不合规！'});
+}).then((req) => new Promise((resolve, reject) => {
+    debug ? console.log('C:req:', req) : '';
     req.repUrl = req.url + '/' + new Date().getTime() + Math.random();
     /**
-       * 消息总线 接收消息 发送指令 到electron
-       * @param msg
-       */
+     * 消息总线 接收消息 发送指令 到electron
+     * @param msg
+     */
     ipcRenderer.send(req.url, req);
     /**
-       * 接收 electron指令结果 发送消息 到消息总线
-       */
+     * 接收 electron指令结果 发送消息 到消息总线
+     */
     ipcRenderer.on(req.repUrl, (event, res) => {
-      console.info('C:rep:', res, JSON.parse(JSON.stringify(event)));
+      debug ?
+          console.info('C:rep:', res, JSON.parse(JSON.stringify(event))) :
+          '';
       resolve(res);
     });
     try {
-      setTimeout(function () {
+      setTimeout(() => {
         reject({code: -1, msg: '执行超时', req});
       }, 3000);
     } catch (e) {
       console.error('C:warm:', req, '执行超时', e);
     }
-  }));
-};
+}));
 
 /* 消息总线 收 */
 /**
@@ -116,7 +118,7 @@ ipcRenderer.on(setting.path.action.update.link.path, (event, arg) => {
  * @param event
  */
 function emitMsg (url, req, event) {
-  console.info('S:rep:', req, JSON.parse(JSON.stringify(event)));
+  debug ? console.info('S:rep:', req, JSON.parse(JSON.stringify(event))) : '';
   message.$emit(url, req);
 }
 

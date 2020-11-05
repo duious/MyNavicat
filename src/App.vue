@@ -80,6 +80,7 @@ export default {
     /* 滚动的滑块 */
     ::-webkit-scrollbar-thumb {
       padding: 4px 0;
+      border: 1px solid #202020;
       border-radius: 6px;
       background: #696969;
       -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
@@ -102,6 +103,13 @@ export default {
     /* 定义右下角拖动块的样式 */
     ::-webkit-resizer {
       background-color: transparent;
+    }
+
+    input[type=number] {
+      &::-webkit-outer-spin-button, &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+      }
+      -moz-appearance: textfield;
     }
   }
 </style>

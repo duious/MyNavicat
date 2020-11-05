@@ -69,7 +69,7 @@ const _store = reactive({
   tableArr: [],
 });
 const myStore = {
-  debug: true,
+  debug: false,
 
   store: {
     /**
@@ -146,12 +146,13 @@ const myStore = {
         }
       }
       if ('' !== id) {
-        _store.linkArr.map((one) => {
-          if (one.id === id) {
-            one = Object.assign(one, item);
-            return one;
+        for (let i = 0; i < _store.linkArr.length; i++) {
+          if (_store.linkArr[i].id === splitIndexStr(id, 0, '.')) {
+            _store.linkArr[i] = item;
+            return;
           }
-        });
+        }
+        _store.linkArr.push(item);
       }
       if (index >= 0 && (index - 1) <= _store.linkArr.length) {
         _store.linkArr[index] = item;
@@ -225,7 +226,7 @@ const myStore = {
           if (err) {
             reject(err);
           }
-          myStore.store.setLinkState({id: id, stateItem: 'linked', to: true});
+          // myStore.store.setLinkState({id: id, stateItem: 'linked', to: true});
           resolve(connection);
         });
       } else {
@@ -268,7 +269,7 @@ const myStore = {
           }) || [];
         } else {
           return _store.dbArr.filter((one) => {
-            if (one.id.split('.')[0] == id) {
+            if (id === splitIndexStr(one.id, 0, '.')) {
               return one;
             }
           }) || [];
@@ -292,16 +293,13 @@ const myStore = {
       }
       if ('' !== id) {
         let deItem = '';
-        _store.dbArr.filter((one) => {
-          if (one.id === id) {
-            deItem = one;
+        for (let i = 0; i < _store.dbArr.length; i++) {
+          if (_store.dbArr[i].id === splitIndexStr(id, 1, '.')) {
+            _store.dbArr[i] = deItem;
+            return;
           }
-        });
-        if ('' !== deItem) {
-          deItem = item;
-        } else {
-          _store.dbArr.push(item);
         }
+        _store.dbArr.push(item);
       }
       if (index >= 0 && (index - 1) <= _store.dbArr.length) {
         _store.dbArr[index] = item;
@@ -368,17 +366,13 @@ const myStore = {
         item['state'] = Object.assign(deepCopy(myStore.store.stateObj), item['state']);
       }
       if ('' !== id) {
-        let deItem = '';
-        _store.tableArr.filter((one) => {
-          if (one.id === id) {
-            deItem = one;
+        for (let i = 0; i < _store.tableArr.length; i++) {
+          if (_store.tableArr[i].id === splitIndexStr(id, 2, '.')) {
+            _store.tableArr[i] = item;
+            return;
           }
-        });
-        if ('' !== deItem) {
-          deItem = item;
-        } else {
-          _store.tableArr.push(item);
         }
+        _store.tableArr.push(item);
       }
       if (index >= 0 && (index - 1) <= _store.tableArr.length) {
         _store.tableArr[index] = item;
@@ -438,6 +432,17 @@ const cleanUpData = (obj) => {
   } else {
     return cleanUp(obj);
   }
+};
+
+const splitIndexStr = (val, index, str) => {
+  let arr = val?.split(str) || '';
+  let strIndex = '';
+  for (let i = 0; i < arr.length; i++) {
+    if (i <= index) {
+      strIndex += arr[i] + str;
+    }
+  }
+  return strIndex.substring(0, strIndex.length - 1);
 };
 
 export let mysqlCore = myStore.store;
