@@ -68,6 +68,7 @@ const _store = reactive({
    */
   tableArr: [],
 });
+const tableIcon = setting.dist.table.type;
 const myStore = {
   debug: false,
 
@@ -78,22 +79,22 @@ const myStore = {
     stateObj: readonly({clicked: false, linked: false, open: false, remember: false}),
     dbChildrenObj: (one) => readonly([
       {
-        id: one.id + '.' + 1, type: '', title: setting.dist.table.type.table.title,
+        id: one.id + '.' + 1, type: 'table.' + tableIcon.table.val, title: tableIcon.table.title,
         state: {linked: true, clicked: false, open: false}, children: [],
       }, {
-        id: one.id + '.' + 2, type: '', title: setting.dist.table.type.views.title,
+        id: one.id + '.' + 2, type: 'table.' + tableIcon.views.val, title: tableIcon.views.title,
         state: {linked: true, clicked: false, open: false}, children: [],
       }, {
-        id: one.id + '.' + 3, type: '', title: setting.dist.table.type.fn.title,
+        id: one.id + '.' + 3, type: 'table.' + tableIcon.fn.val, title: tableIcon.fn.title,
         state: {linked: true, clicked: false, open: false}, children: [],
       }, {
-        id: one.id + '.' + 4, type: '', title: setting.dist.table.type.event.title,
+        id: one.id + '.' + 4, type: 'table.' + tableIcon.event.val, title: tableIcon.event.title,
         state: {linked: true, clicked: false, open: false}, children: [],
       }, {
-        id: one.id + '.' + 5, type: '', title: setting.dist.table.type.query.title,
+        id: one.id + '.' + 5, type: 'table.' + tableIcon.query.val, title: tableIcon.query.title,
         state: {linked: true, clicked: false, open: false}, children: [],
       }, {
-        id: one.id + '.' + 6, type: '', title: setting.dist.table.type.backup.title,
+        id: one.id + '.' + 6, type: 'table.' + tableIcon.backup.val, title: tableIcon.backup.title,
         state: {linked: true, clicked: false, open: false}, children: [],
       },
     ]),

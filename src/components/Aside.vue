@@ -1,6 +1,6 @@
 <template>
   <Resizer :type="'right'" :rank="[200,500]">
-    <component v-if="''!==component" :treeArr="linkArr" :is="component"
+    <component v-if="''!==component" :treeArr="linkArr" :is="component" @dblclick="dblclick"
                @linkClick="linkClick" @linkContextMenu="linkContextMenu"></component>
   </Resizer>
 </template>
@@ -21,7 +21,7 @@ export default {
          */
       linkArr: [],
       focusItem: {
-        'id': '1.1', 'type': 'db', 'title': '',
+        'id': '', 'type': 'db', 'title': '',
         'dbData': {
           'name': '',
           'character': '',
@@ -96,14 +96,44 @@ export default {
       _this.component = 'Tree';
     },
     /**
-       * 左键单击链接元素
-       * @param {Object} item 链接对象
-       * @param {number} index 所在数组下标
-       */
+     * 左键单击链接元素
+     * @param {Object} item 链接对象
+     * @param {number} index 所在数组下标
+     */
     linkClick (item, index) {
       let _this = this;
       _this.resetLinkClicked(_this.linkArr);
+      _this.focusItem.item = item;
       item.state.clicked = true;
+      _this.focusItem.index = index;
+    },
+    /**
+     * 左键双击链接元素
+     * @param {Object} item 链接对象
+     * @param {number} index 所在数组下标
+     */
+    dblclick (item, index, event) {
+      let _this = this;
+      _this.resetLinkClicked(_this.linkArr);
+      _this.$nextTick(() => {
+        _this.linkClick(item, index);
+        if (!item.state.open) {
+          switch (item.id.split('.').length) {
+            case 1:
+              _this.connectionOpen();
+              break;
+            case 2:
+              _this.dbOpen();
+              break;
+            case 3:
+              item.state.open = true;
+              break;
+            case 4:
+              _this.tableOpen();
+              break;
+          }
+        }
+      });
     },
     /**
        * 右键单击链接元素

@@ -1,22 +1,22 @@
 <template>
   <div style="overflow-x: hidden;">
     <div class="link-item-div" v-for="(item,index) in treeData.links" :key="item.id">
-      <TreeNode :item="item" :index="index" @linkClick="linkClick"
+      <TreeNode :item="item" :index="index" @linkClick="linkClick" @dblclick="dblclick"
                 @linkContextMenu="linkContextMenu"></TreeNode>
       <div class="link-item-child" :style="{'height': getHeight(item)}">
         <div class="link-item-div" v-for="(childItem,childIndex) in item.children" :key="childItem.id">
-          <TreeNode :item="childItem" :index="childIndex"
+          <TreeNode :item="childItem" :index="childIndex" @dblclick="dblclick"
                     @linkClick="linkClick" @linkContextMenu="linkContextMenu"></TreeNode>
           <div class="link-item-child" :style="{'height': getHeight(childItem)}">
             <div class="link-item-div" v-if="childItem && childItem.children"
                  v-for="(grandChildItem,grandChildIndex)  in childItem.children" :key="grandChildItem.id">
-              <TreeNode :item="grandChildItem" :index="grandChildIndex"
+              <TreeNode :item="grandChildItem" :index="grandChildIndex" @dblclick="dblclick"
                         @linkClick="linkClick" @linkContextMenu="linkContextMenu"></TreeNode>
               <div class="link-item-child" :style="{'height': getHeight(grandChildItem)}">
                 <div class="link-item-div" v-if="grandChildItem && grandChildItem.children"
                      v-for="(grandGrandChildItem,grandGrandChildIndex)  in grandChildItem.children"
                      :key="grandGrandChildItem.id">
-                  <TreeNode :item="grandGrandChildItem" :index="grandGrandChildIndex"
+                  <TreeNode :item="grandGrandChildItem" :index="grandGrandChildIndex" @dblclick="dblclick"
                             @linkClick="linkClick" @linkContextMenu="linkContextMenu"></TreeNode>
                 </div>
               </div>
@@ -47,16 +47,24 @@ export default {
      * @param {Object} item 选中的元素
      * @param {Number} index 所在数组对应的下标
      */
-    const linkClick = (item, index) => {
-      context.emit('linkClick', item, index);
+    const linkClick = (item, index, event) => {
+      context.emit('linkClick', item, index, event);
+    };
+    /**
+     * 左键双击链接元素
+     * @param {Object} item 选中的元素
+     * @param {Number} index 所在数组对应的下标
+     */
+    const dblclick = (item, index, event) => {
+      context.emit('dblclick', item, index, event);
     };
     /**
      * 右键单击链接元素
      * @param {Object} item 选中的元素
      * @param {Number} index 所在数组对应的下标
      */
-    const linkContextMenu = (item, index) => {
-      context.emit('linkContextMenu', item, index);
+    const linkContextMenu = (item, index, event) => {
+      context.emit('linkContextMenu', item, index, event);
     };
     /**
      * 左键单击链接元素开合指示箭头
@@ -81,7 +89,7 @@ export default {
       concatHeight(item);
       return item.state.open === false ? 0 : (height + 'px');
     };
-    return {treeData, linkClick, linkContextMenu, openArrowClick, getHeight};
+    return {treeData, linkClick, dblclick, linkContextMenu, openArrowClick, getHeight};
   },
 };
 </script>

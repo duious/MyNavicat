@@ -1,19 +1,21 @@
 <template>
   <div>
-    <div class="link-item" :class="nodeData.item.state.clicked?'clicked':''"
-         :style="{'margin-left': (nodeData.item?.id?.split('.').length - 1) * 14 + 'px'}"
-         @click="linkClick(nodeData.item,nodeData.index)" @contextmenu="linkContextMenu(nodeData.item,nodeData.index)">
-      <i class="link-item-arrow" v-if="nodeData.item.children && nodeData.item.children !== ''"
-         :class="nodeData.item.state.linked?nodeData.item.state.open?'down-arrow':'right-arrow':''"
-         @click.stop="openArrowClick(nodeData.item)"></i>
-      <div v-show="item.type" class="link-item-icon" :class="nodeData.item.state.linked?'linked':''"
-           v-html="nodeData.icon[item.type]"></div>
-      <span class="link-item-name">{{nodeData.item.title}}</span>
+    <div class="link-item" :class="item.state.clicked ? 'clicked' : ''"
+         :style="{'margin-left': (item?.id?.split('.').length - 1) * 14 + 'px'}"
+         @dblclick.left.stop="dblclick(item, index, $event)"
+         @click.left.stop="linkClick(item, index, $event)"
+         @contextmenu.stop="linkContextMenu(item, index, $event)">
+      <i class="link-item-arrow" v-if="item.children && item.children !== ''"
+         :class="item.state.linked ? item.state.open ? 'down-arrow' : 'right-arrow' : ''"
+         @click.stop="openArrowClick(item)"></i>
+      <div v-show="item.type" class="link-item-icon" :class="item.state.linked ? 'linked' : ''"
+           v-html="getIcon(item)"></div>
+      <span class="link-item-name">{{item.title}}</span>
     </div>
   </div>
 </template>
 <script>
-import {reactive} from 'vue';
+import {reactive, nextTick} from 'vue';
 import setting from '../../setting.json';
 
 export default {
@@ -30,14 +32,22 @@ export default {
     /**
      * 左键单击链接元素
      */
-    const linkClick = (item, index) => {
-      context.emit('linkClick', item, index);
+    const linkClick = (item, index, event) => {
+      context.emit('linkClick', item, index, event);
+    };
+    /**
+     * 左键单击链接元素
+     */
+    const dblclick = (item, index, event) => {
+      nextTick(() => {
+        context.emit('dblclick', item, index, event);
+      });
     };
     /**
      * 右键单击链接元素
      */
-    const linkContextMenu = (item, index) => {
-      context.emit('linkContextMenu', item, index);
+    const linkContextMenu = (item, index, event) => {
+      context.emit('linkContextMenu', item, index, event);
     };
     /**
      * 左键单击链接元素开合指示箭头
@@ -46,7 +56,27 @@ export default {
       item.state.open ? item.state.linked = 'down-arrow' : item.state.linked = 'right-arrow';
       item.state.open === false ? item.state.open = true : item.state.open = false;
     };
-    return {nodeData, linkClick, linkContextMenu, openArrowClick};
+    const getIcon = (item) => {
+      let src = '';
+      if (item.type.indexOf('.') !== -1) {
+        src = nodeData.icon[item.type.split('.')[0]][item.type.split('.')[1]];
+      } else {
+        if (JSON.stringify(nodeData.icon[item.type] || '').indexOf('active') === -1) {
+          src = nodeData.icon[item.type];
+        } else {
+          if (item.state.linked) {
+            src = nodeData.icon[item.type]['active'];
+          } else {
+            src = nodeData.icon[item.type]['def'];
+          }
+        }
+      }
+      if (typeof src !== 'string') {
+        src = nodeData.icon.table[item.type];
+      }
+      return src;
+    };
+    return {...nodeData, linkClick, dblclick, linkContextMenu, openArrowClick, getIcon};
   },
 };
 </script>
@@ -118,13 +148,19 @@ export default {
       flex-direction: column;
       margin-left: 18px;
       transition: .5s;
+
+      .link-item-div .link-item .link-item-icon {
+        background-color: transparent;
+        margin: 0 2px 0 0;
+        height: 22px;
+      }
     }
 
     .clicked {
 
       &:before {
         content: ' ';
-        background-image: linear-gradient(#3e00d3, #3e00d3);
+        background-image: linear-gradient(#0259d0, #0259d0);
         position: absolute;
         left: -54px;
         top: 0;
