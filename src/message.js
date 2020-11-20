@@ -144,6 +144,8 @@ function emitMsg (url, req, event) {
 //   eventHub.$emit(setting.channel.ACTION + '/' + 'openDB', arg.res);
 // });
 
+export let msg = message;
+
 export default {
   install: (app) => {
     message.app = app;

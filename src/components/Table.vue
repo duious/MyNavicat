@@ -86,7 +86,11 @@ import setting from '../../setting.json';
 export default {
   components: {'Resizer': Resizer},
   props: {
-    tableArr: Object,
+    tableArr: {
+      type: Object,
+      default: {thead: [{title: '名称', val: 'Name'}], tbody: []},
+      required: true,
+    },
   },
   setup (props, context) {
     /**
@@ -250,7 +254,7 @@ export default {
     /**
      * 分页数据自响应监听
      */
-    watch(() => table.page.currentPage, () => {
+    watch(() => [table.page.currentPage, table.tbody], () => {
       table.page.data = table.tbody.filter((one, index) => {
         if (index >= (table.page.currentPage - 1) * table.page.pageSize &&
             index <= table.page.currentPage * table.page.pageSize) {
@@ -553,9 +557,20 @@ export default {
     initTheadResizeArr();
     initCurrentPage();
 
+    watch(() => props.tableArr.tbody, () => {
+      table.tbody = props.tableArr.tbody;
+      initTheadResizeArr();
+      initCurrentPage();
+    });
+    watch(() => props.tableArr.thead, () => {
+      table.thead = props.tableArr.thead;
+      initTheadResizeArr();
+      initCurrentPage();
+    });
+
     return {
       TABLE_TR_CHECKED_STATE, TABLE_TD_CHECKED_STATE, TABLE_CELL_EDIT_STATE,
-      ...table, ...toRefs(edit), keyDownFn, copyVal,
+      ...toRefs(table), ...toRefs(edit), keyDownFn, copyVal,
       ...tableElData, tableStyle, styleChange, tableParentStyle, resizeStyleArr,
       pageChange, setPageSize,
     };

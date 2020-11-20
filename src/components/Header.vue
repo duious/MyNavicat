@@ -1,84 +1,125 @@
 <template>
   <div>
-    <div class="title-bar"><span class="title">{{title}}</span></div>
+    <div class="title-bar"><span class="title">{{ title }}</span></div>
     <div class="menu-div">
       <div class="menu-group" v-for="optionsItem in options">
-        <div class="menu-item" v-for="(item,index) in optionsItem" :class="item.active?'clicked':''"
-             @click="menuClick(item,index)">
-          <div class="menu-item-icon" v-if="item.table.indexOf(',')===-1" v-html="getIconDom(item.table)"></div>
-          <div class="menu-item-icon" v-else v-for="icons in item.table.split(',')" v-html="getIconDom(icons)"></div>
-          <span class="menu-item-title">{{item.title}}</span>
+        <div class="menu-item" :class="item.active ? 'clicked' : ''" v-for="(item, index) in optionsItem">
+          <div class="menu-item-icon"
+               v-if="item.option.indexOf(',') === -1"
+               v-html="getIconDom(item.option)"
+               @click="menuClick(item.option, item, index, $event)"></div>
+          <div class="menu-item-icon"
+               v-else
+               v-for="icons in item.option.split(',')"
+               v-html="getIconDom(icons)"
+               @click="menuClick(icons, item, index, $event)"></div>
+          <span class="menu-item-title">{{ item.title }}</span>
         </div>
       </div>
     </div>
   </div>
 </template>
 <script>
+import {reactive, watch} from 'vue';
 import setting from '../../setting.json';
-
+/**
+ * header
+ * @description @Components {@link header} 组件
+ * @description @:activeObj {@link activeOption} props:activeOption='table'
+ * @description @@optionClick {@link optionClick} optionClick(item, trIndex, tdIndex, key, val, cb()) 新增一行事件
+ */
 export default {
-  data () {
-    return {
+  props: {
+    activeObj: {
+      type: String,
+      default: JSON.stringify({option: 'table'}),
+      required: true,
+    },
+  },
+  setup (props, context) {
+    /**
+     * header数据
+     * @property {String} title header居中展示的名字
+     * @property {Array} options 数据库功能项即其它功能数组
+     * @property {Object} icon 功能项使用的图标
+     */
+    const headData = reactive({
       title: document.title,
       options: [
         [
-          {type: 'core', table: 'newLink', title: '链接', action: 'link'},
-          {type: 'core', table: 'newQuery', title: '新建查询', action: 'query'},
-          {type: 'base', table: 'table', title: '表', path: '', active: true},
-          {type: 'base', table: 'view', title: '视图', path: ''},
-          {type: 'base', table: 'fn', title: '函数', path: ''},
-          {type: 'base', table: 'event', title: '事件', path: ''},
-          {type: 'base', table: 'user', title: '用户', path: ''},
-          {type: 'base', table: 'query', title: '查询', path: ''},
-          {type: 'base', table: 'backup', title: '备份', path: ''},
-          {type: 'base', table: 'autoRun', title: '自动运行', path: ''},
-          {type: 'base', table: 'model', title: '模型', path: ''},
+          {type: 'core', option: 'newLink', title: '链接', action: 'link'},
+          {type: 'core', option: 'newQuery', title: '新建查询', action: 'query'},
+          {type: 'base', option: 'table', title: '表', active: true},
+          {type: 'base', option: 'views', title: '视图'},
+          {type: 'base', option: 'fn', title: '函数'},
+          {type: 'base', option: 'event', title: '事件'},
+          {type: 'base', option: 'user', title: '用户'},
+          {type: 'base', option: 'query', title: '查询'},
+          {type: 'base', option: 'backup', title: '备份'},
+          {type: 'base', option: 'autoRun', title: '自动运行'},
+          {type: 'base', option: 'model', title: '模型'},
         ],
         [
-          {type: 'views', table: 'leftView,rightView', title: '视窗', path: ''},
-          {type: 'account', table: 'loginUser', title: '账户', path: ''},
+          {type: 'views', option: 'leftView,rightView', title: '视窗'},
+          {type: 'account', option: 'loginUser', title: '账户'},
         ],
       ],
       icon: setting.icon.menu,
-    };
-  },
-  methods: {
-    getIconDom (icon) {
-      return this.icon[icon]['25'].indexOf('svg') !== -1 ? this.icon[icon]['25'] : this.icon[icon];
-    },
-    menuClick (item, index) {
-      let _this = this;
-      switch (item.type) {
-        /**
-           * 新链接调取原生菜单
-           * 新查询调取新地址建立新tab页
-           */
-        case 'core':
-            item.table === 'newLink' ?
-              _this.$message.send(setting.path.menu.open.path, {params: setting.path.menu.open.params.newLink}) :
-              _this.$message.$emit(setting.path.root.creat.path, {params: {path: item.table, table: item.table}});
-          break;
-        case 'base':
-          _this.activeMenu(item);
-          break;
-        case 'views':
-          break;
-        case 'account':
-          break;
-        default:
-          break;
-      }
-    },
-    activeMenu (item) {
-      let _this = this;
-      for (let i = 0; i < _this.options.length; i++) {
-        for (let j = 0; j < _this.options[i].length; j++) {
-          _this.options[i][j].active = false;
+    });
+    /**
+     * 初始化选中的选项
+     * @param {String} option 标记选中的选项
+     */
+    const initCheckOption = (option) => {
+      let isNeed = false;
+      headData.options[0].filter((one) => {
+        if (one.option === option && 'base' === one.type) {
+          isNeed = true;
         }
-      }
-      item.active = true;
-      _this.$message.$emit(setting.path.root.go.path, {params: {path: item.path, table: item.table}});
-    },
+      });
+      isNeed ? headData.options[0].map((one) => {
+        if ('base' === one.type) {
+          one.option === option ? one['active'] = true : delete one['active'];
+        }
+      }) : '';
+    };
+    /**
+     * 获取图标dom字符串
+     * @param {String} icon 图标名称
+     * @return {Document} icon dom节点
+     */
+    const getIconDom = (icon) => headData.icon[icon]['25'].indexOf('svg') !== -1 ? headData.icon[icon]['25'] : headData.icon[icon];
+    /**
+     * 发送选中事件
+     * @param {String} type 点击的元素的功能所属类型
+     * @param {Object} item 点击的元素对象
+     * @param {clickEvent} event 当前点击事件
+     */
+    const optionClick = (type, item, event) => {
+      context.emit('optionClick', type, item, event);
+    };
+    /**
+     * 菜单点击事件
+     * @param {String} option 点击的元素的功能名称
+     * @param {Object} item 点击的元素对象
+     * @param {Number} index 点击的元素对象所在数组的下标
+     * @param {clickEvent} event 当前点击事件
+     */
+    const menuClick = (option, item, index, event) => {
+      optionClick(item.type, item, event);
+      item.type === 'base' ? initCheckOption(option) : '';
+    };
+    /**
+     * 获取active对象
+     * return {Object} activeObj active对象
+     */
+    const getActiveObj = () => JSON.parse(JSON.stringify(JSON.parse(props.activeObj)));
+    initCheckOption(getActiveObj().option);
+    /**
+     * 自响应 选择的功能的改变
+     */
+    watch(() => props.activeObj, () => initCheckOption(getActiveObj().option));
+    return {...headData, getIconDom, menuClick};
   },
 };
 </script>
@@ -123,7 +164,7 @@ export default {
           text-align: center;
           border-left-width: 1px;
           flex-direction: column;
-          transition: .1s;
+          transition: .3s;
 
           .menu-item-icon {
             width: 33px;

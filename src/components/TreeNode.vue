@@ -57,6 +57,9 @@ export default {
       item.state.open === false ? item.state.open = true : item.state.open = false;
     };
     const getIcon = (item) => {
+      if (!item.hasOwnProperty('type')) {
+        return '';
+      }
       let src = '';
       if (item.type.indexOf('.') !== -1) {
         src = nodeData.icon[item.type.split('.')[0]][item.type.split('.')[1]];
