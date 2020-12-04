@@ -23,7 +23,8 @@
     </div>
     <div class="foot-div" v-if="''!==tab.component">
       <Resizer v-if="''!==tab.component" :type="'top'" :rank="[180]" style="width: 100%;">
-        <component :tab="tab.tabData" v-if="''!==tab.component" :is="tab.component" @clickTabs="clickTabs"></component>
+        <component :tabsArr="tab.tabData" v-if="''!==tab.component" :is="tab.component"
+                   @tabsItemClick="clickTabs"></component>
       </Resizer>
     </div>
   </div>

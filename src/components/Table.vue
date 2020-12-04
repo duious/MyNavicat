@@ -36,7 +36,7 @@
       </tbody>
     </table>
   </div>
-  <div class="pages-div" >
+  <div class="pages-div" v-show="tbody?.length > 0">
     <div class="pages-item">
       <i class="pages-icon clickable" v-html="action.icon.add['14']"
          title="添加记录" @mousedown="pageChange('start')"></i>
@@ -70,7 +70,7 @@
   </div>
 </template>
 <script>
-import {reactive, ref, onMounted, watch, toRefs} from 'vue';
+import {reactive, ref, onMounted, watch, toRefs, nextTick} from 'vue';
 import Resizer from './Resizer.vue';
 import setting from '../../setting.json';
 
@@ -170,6 +170,7 @@ export default {
      * @property {tableStyle} item 初始值为表头的对应元素的宽度
      */
     let resizeStyleArr = [];
+    let tableComponentParentStyle = reactive({width: '', height: '', interval: ''});
     /**
      * 表格分页
      * @description 根据传入的表格数据进行初始化
@@ -244,9 +245,10 @@ export default {
      * 表格resize方法
      */
     const resizeTable = () => {
+      tableParentDom = '';
       tableParentDom = tableElData.tableParentEl.value.parentNode;
       tableParentStyle.width = tableParentDom.clientWidth + 'px';
-      tableParentStyle.height = tableParentDom.clientHeight - 24 + 'px';
+      tableParentStyle.height = tableParentDom.clientHeight - (table.tbody?.length > 0 ? 24 : 0) + 'px';
       tableStyle.width = Math.max(tableElData.tableHeadEl.value.firstChild.clientWidth + 6, tableParentDom.clientWidth) + 'px';
       // 视口
       tableViewArea[1] = [parseInt(tableElData.tableBodyEl.value.getBoundingClientRect().y), parseInt(tableElData.tableBodyEl.value.getBoundingClientRect().y + tableParentDom.clientHeight)];
@@ -275,9 +277,18 @@ export default {
     let tableParentDom;
     onMounted(() => {
       window.onresize = () => {
+        // todo 当在tab组件内时，resize方法失效
         resizeTable();
       };
       resizeTable();
+      nextTick(() => {
+        // todo resize应急处理
+        let dom = tableElData.tableParentEl?.value?.parentNode?.parentNode?.parentNode?.parentNode;
+        dom.addEventListener('mouseup', () => {
+          tableComponentParentStyle.height = dom.clientHeight;
+          tableComponentParentStyle.width = dom.clientWidth;
+        });
+      });
     });
     /**
      * @property 0 tr
@@ -557,16 +568,14 @@ export default {
     initTheadResizeArr();
     initCurrentPage();
 
-    watch(() => props.tableArr.tbody, () => {
+    watch(() => [props.tableArr.tbody, props.tableArr.thead], () => {
       table.tbody = props.tableArr.tbody;
-      initTheadResizeArr();
-      initCurrentPage();
-    });
-    watch(() => props.tableArr.thead, () => {
       table.thead = props.tableArr.thead;
       initTheadResizeArr();
       initCurrentPage();
     });
+    // todo resize应急处理
+    watch(() => [tableComponentParentStyle.height, tableComponentParentStyle.width], () => nextTick(() => resizeTable));
 
     return {
       TABLE_TR_CHECKED_STATE, TABLE_TD_CHECKED_STATE, TABLE_CELL_EDIT_STATE,

@@ -1,14 +1,23 @@
 <template>
   <div class="index">
-    <component class="header" v-if="''!==component.header" :is="component.header"
+    <component class="header"
+               v-if="'' !== component.header"
+               :is="component.header"
                :activeObj="activeObj"
-               @optionClick="headerOptionClick"></component>
+               @optionClick="headerOptionClick"
+               :key="0 + '.' + component.header"></component>
     <div class="container" ref="containerEl">
-      <component class="aside" v-if="''!==component.aside" :is="component.aside"
+      <component class="aside"
+                 v-if="'' !== component.aside"
+                 :is="component.aside"
                  :activeObj="activeObj"
-                 @optionClick="asideOptionClick"></component>
-      <component class="main" v-if="''!==component.main" :is="component.main"
-                 :activeObj="activeObj"></component>
+                 @optionClick="asideOptionClick"
+                 :key="0 + '.' + component.aside"></component>
+      <component class="main"
+                 v-if="'' !== component.main"
+                 :is="component.main"
+                 :activeObj="activeObj"
+                 :key="0 + '.' +component.main"></component>
     </div>
     <div class="footer"></div>
   </div>
@@ -49,11 +58,11 @@ export default {
           if (item.option === 'newLink') {
             msg.send(setting.path.menu.open.path, {params: setting.path.menu.open.params.newLink});
           } else {
-            _this.activeObj = JSON.stringify(Object.assign(JSON.parse(_this.activeObj), {option: item.option, tab: item.option, v: new Date().getTime()}));
+            _this.setActiveObj(Object.assign(_this.getActiveObj(), {option: item.option, tab: item.option, v: new Date().getTime()}));
           }
           break;
         case 'base':
-          _this.activeObj = JSON.stringify(Object.assign(JSON.parse(_this.activeObj), {option: item.option, tab: DEFAULT_ACTIVE}));
+          _this.setActiveObj(Object.assign(_this.getActiveObj(), {option: item.option, tab: DEFAULT_ACTIVE}));
           break;
         default:
           break;

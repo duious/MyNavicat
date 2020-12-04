@@ -114,25 +114,25 @@ export default {
       asideData.focusItem.item = item;
       item.state.clicked = true;
       asideData.focusItem.index = index;
+      let asideItem = '';
       if (asideData.focusItem.item.id.split('.').length >= 3) {
-        let asideItem;
         asideData.linkArr.filter((one) => {
           if (one.id == asideData.focusItem.item.id.split('.')[0]) {
             one.children.filter((two) => {
               if (two.id.split('.')[1] == asideData.focusItem.item.id.split('.')[1]) {
-                let {id, title, type, children} = two;
-                asideItem = {id, title, type, children};
+                let {id, title, type, state, children} = two;
+                asideItem = {id, title, type, state, children};
               }
             });
           }
         });
-        asideItem?.children.filter((one) => {
-          if (one.type === asideData.focusItem.item.type) {
-            asideItem.children = one.children;
-          }
-        });
-        asideData.focusItem.item.type.indexOf('.') === -1 ? context.emit('optionClick', asideData.focusItem.item.type, asideItem) : context.emit('optionClick', asideData.focusItem.item.type.split('.')[1], asideItem);
+        // asideItem?.children.filter((one) => {
+        //   if (one.type === asideData.focusItem.item.type) {
+        //     asideItem.children = one.children;
+        //   }
+        // });
       }
+      asideData.focusItem.item.type.indexOf('.') === -1 ? context.emit('optionClick', asideData.focusItem.item.type, asideItem) : context.emit('optionClick', asideData.focusItem.item.type.split('.')[1], asideItem);
     };
     /**
      * 左键双击链接元素
@@ -371,6 +371,9 @@ export default {
     const focusLinkItem = () => {
       if (asideData.focusItem.index > -1 && asideData.focusItem.item.id.indexOf('.') > -1) {
         let isNeed = false;
+        if (asideData.focusItem?.item?.type == getActiveObj().option) {
+          return; ;
+        }
         mysqlCore.dbChildrenObj({id: '_'}).filter((one) => {
           if (one.type.split('.')[1] == getActiveObj().option) {
             isNeed = true;

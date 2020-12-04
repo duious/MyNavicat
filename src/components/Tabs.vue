@@ -2,14 +2,14 @@
   <div class="tab-div">
     <div class="tab-header">
       <div class="tab-btn-group">
-        <button class="tab-btn" v-for="({tabHead},index) in tabData.list" type="button"
-                :class="tabHead.clicked?'clicked':''"
-                @click="tabClick(tabHead,index)">{{tabHead.title}}
+        <button class="tab-btn" v-for="({tabHead}, index) in tabData.list" type="button"
+                :class="tabHead.clicked ? 'clicked' : ''" :key="index + '.' + tabHead.type"
+                @click.stop="tabsItemClick(tabHead, index, $event)">{{tabHead.title}}
         </button>
       </div>
     </div>
     <div class="tab-body">
-      <div class="table" v-for="({tabHead,tabBody},index) in tabData.list" v-show="tabHead.clicked">
+      <div class="table" v-for="({tabHead,tabBody}, index) in tabData.list" v-show="tabHead.clicked">
         <component v-if="''!==tabBody.slot.component" :tableArr="tabBody.slot.tableData"
                    :is="tabBody.slot.component"></component>
       </div>
@@ -23,11 +23,14 @@ import Table from './Table.vue';
 export default {
   components: {'Table': Table},
   props: {
-    tab: Array,
+    tabsArr: {
+      type: Array,
+      required: true,
+    },
   },
   setup (props, context) {
     const tabData = reactive({
-      list: ref(props.tab),
+      list: ref(props.tabsArr),
     });
     const resetList = () => {
       tabData.list.filter((one) => {
@@ -52,9 +55,11 @@ export default {
       }
     }
 
-    const tabClick = (item, index) => {
+    const tabsItemClick = (item, index, event) => {
+      event.preventDefault();
       resetList();
       item.clicked = true;
+      context.emit('tabsItemClick', item, event);
       // context.emit('clickTabs', item, (res) => {
       //   console.error(res);
       //   if (res instanceof Array) {
@@ -69,7 +74,7 @@ export default {
       //   }
       // });
     };
-    return {tabData, tabClick};
+    return {tabData, tabsItemClick};
   },
 };
 </script>
