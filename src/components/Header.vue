@@ -22,11 +22,12 @@
 <script>
 import {reactive, watch} from 'vue';
 import setting from '../../setting.json';
+const MENU_ITEM_CLICK = 'menuItemClick';
 /**
  * header
  * @description @Components {@link header} 组件
- * @description @:activeObj {@link activeOption} props:activeOption='table'
- * @description @@optionClick {@link optionClick} optionClick(item, trIndex, tdIndex, key, val, cb()) 新增一行事件
+ * @description @:activeObj {@link activeObj} props:activeOption='table'
+ * @description @@optionClick {@link menuItemClick} menuItemClick(type, item, event) 点击菜单元素事件
  */
 export default {
   props: {
@@ -36,6 +37,11 @@ export default {
       required: true,
     },
   },
+  /**
+   * @param {Object} props 组件入参
+   * @param {Object} context 当前上下文方法
+   * @return {Object} Object
+   */
   setup (props, context) {
     /**
      * header数据
@@ -93,17 +99,17 @@ export default {
      * 发送选中事件
      * @param {String} type 点击的元素的功能所属类型
      * @param {Object} item 点击的元素对象
-     * @param {clickEvent} event 当前点击事件
+     * @param {Event} event 当前点击事件
      */
     const optionClick = (type, item, event) => {
-      context.emit('optionClick', type, item, event);
+      context.emit(MENU_ITEM_CLICK, type, item, event);
     };
     /**
      * 菜单点击事件
      * @param {String} option 点击的元素的功能名称
      * @param {Object} item 点击的元素对象
      * @param {Number} index 点击的元素对象所在数组的下标
-     * @param {clickEvent} event 当前点击事件
+     * @param {Event} event 当前点击事件
      */
     const menuClick = (option, item, index, event) => {
       optionClick(item.type, item, event);
@@ -111,7 +117,7 @@ export default {
     };
     /**
      * 获取active对象
-     * return {Object} activeObj active对象
+     * @return {Object} activeObj active对象
      */
     const getActiveObj = () => JSON.parse(JSON.stringify(JSON.parse(props.activeObj)));
     initCheckOption(getActiveObj().option);

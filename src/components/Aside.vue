@@ -1,18 +1,25 @@
 <template>
-  <Resizer :type="'right'" :rank="[200,500]">
+  <Resizer :type="'right'" :rank="[200, 500]" :key="'0-Resizer'" v-if="true">
+    <div></div>
     <component v-if="''!==component" :treeArr="linkArr" :is="component" @dblclick="dblclick"
-               @linkClick="linkClick" @linkContextMenu="linkContextMenu"></component>
+               @linkClick="linkClick" @linkContextMenu="linkContextMenu" :key="'0-Tree'"></component>
   </Resizer>
 </template>
 <script>
-import {ref, reactive, computed, nextTick, toRefs, watch} from 'vue';
+import {reactive, nextTick, toRefs, watch, computed} from 'vue';
 import {msg} from '../message';
 import {mysqlCore} from '../mysql-core';
 import {query, SQL_DEF} from '../util-mysql';
 import setting from '../../setting.json';
 import Tree from './Tree.vue';
 import Resizer from './Resizer.vue';
-
+const LINK_ITEM_CLICK = 'linkItemClick';
+/**
+ * aside
+ * @description @Components {@link aside} 组件
+ * @description @:activeObj {@link activeObj} props:activeOption='table'
+ * @description @@optionClick {@link linkItemClick} linkItemClick(type, item) 链接元素点击事件
+ */
 export default {
   components: {'Tree': Tree, 'Resizer': Resizer},
   props: {
@@ -21,6 +28,11 @@ export default {
       default: JSON.stringify({option: 'table'}),
     },
   },
+  /**
+   * @param {Object} props 组件入参
+   * @param {Object} context 当前上下文方法
+   * @return {Object} Object
+   */
   setup (props, context) {
     /**
      * header数据
@@ -52,10 +64,9 @@ export default {
       },
       component: '',
     });
-
     // 响应：更新链接列表
-    msg.on(setting.path.action.update.link.path, () => {
-      emit('getLinkArr', updateLinkList);
+    msg.on(setting.path.action.update.link.path, (res) => {
+      initLinkList(res.res);
     });
     // 响应：打开选中的链接
     msg.on(setting.path.menu.open.link.path, () => {
@@ -81,25 +92,31 @@ export default {
     msg.on(setting.path.menu.close.table.path, () => {
       tableClose();
     });
-
-
     /**
      * 初始化：获取当前存储的所有链接
+     * @param {Array} data 返回的链接数组
      */
-    const initLinkList = () => {
-      msg.send(setting.path.disk.get.path, {key: setting.disk.key.link}).then((res) => {
+    const initLinkList = (data) => {
+      new Promise((resolve) => {
+        if (undefined === data) {
+          msg.send(setting.path.disk.get.path, {key: setting.disk.key.link}).then((res) => {
+            resolve(res.res);
+          });
+        } else {
+          resolve(data);
+        }
+      }).then((res) => {
         mysqlCore.resetLink();
-        for (let i = 0; i < res.res.length; i++) {
-          mysqlCore.setLink({index: i, item: res.res[i]});
+        for (let i = 0; i < res.length; i++) {
+          mysqlCore.setLink({index: i, item: res[i]});
         }
         updateLinkList();
       });
     };
     /**
      * 更新链接列表
-     * @param {Array} linkArr
      */
-    const updateLinkList = () => {
+    const updateLinkList = async () => {
       asideData.component = '';
       asideData.linkArr = computed(() => mysqlCore.getLink());
       asideData.component = 'Tree';
@@ -115,7 +132,7 @@ export default {
       item.state.clicked = true;
       asideData.focusItem.index = index;
       let asideItem = '';
-      if (asideData.focusItem.item.id.split('.').length >= 3) {
+      if ((asideData.focusItem.item.id + '').split('.').length >= 3) {
         asideData.linkArr.filter((one) => {
           if (one.id == asideData.focusItem.item.id.split('.')[0]) {
             one.children.filter((two) => {
@@ -132,20 +149,19 @@ export default {
         //   }
         // });
       }
-      asideData.focusItem.item.type.indexOf('.') === -1 ? context.emit('optionClick', asideData.focusItem.item.type, asideItem) : context.emit('optionClick', asideData.focusItem.item.type.split('.')[1], asideItem);
+      context.emit(LINK_ITEM_CLICK, asideData.focusItem.item.type.indexOf('.') === -1 ? asideData.focusItem.item.type : asideData.focusItem.item.type.split('.')[1], asideItem);
     };
     /**
      * 左键双击链接元素
      * @param {Object} item 链接对象
      * @param {number} index 所在数组下标
-     * @param {clickEvent} event 点击事件
      */
-    const dblclick = (item, index, event) => {
+    const dblclick = (item, index) => {
       resetLinkClicked(asideData.linkArr);
       nextTick(() => {
         linkClick(item, index);
         if (!item.state.open) {
-          switch (item.id.split('.').length) {
+          switch ((item.id + '').split('.').length) {
             case 1:
               connectionOpen();
               break;
@@ -191,7 +207,7 @@ export default {
               item: JSON.parse(JSON.stringify(postItem)),
             });
       }
-      postItem = '';
+      // postItem = '';
     };
     /**
      * 重置链接点击状态
@@ -207,12 +223,12 @@ export default {
      * 建立链接
      */
     const connectionOpen = () => {
-      let focusId = asideData.focusItem.item.id.split('.')[0];
+      let focusId = (asideData.focusItem.item.id + '').split('.')[0];
       mysqlCore.getConnection({id: focusId}).then((connection) => {
         query(connection, SQL_DEF.SCHEMA_NAME).then((res) => {
           let resItem = '';
           asideData.focusItem.item.children = [];
-          for (let i = 0; i < res.length; i++) {
+          for (let i = 0; i < res?.length; i++) {
             resItem = {
               'id': focusId + '.' + (i + 1),
               'type': 'db',
@@ -231,7 +247,7 @@ export default {
               'children': '',
             };
             asideData.focusItem.item.children.push(resItem);
-            mysqlCore.setDb({id: resItem.id, item: resItem});
+            mysqlCore.setDb({id: resItem?.id, item: resItem});
           }
           mysqlCore.setLinkState({id: focusId, stateItem: ['open', 'linked'], to: true});
           updateLinkList();
@@ -252,6 +268,10 @@ export default {
      * @param {Array} res 返回的结果
      */
     const initDBTable = (item, res) => {
+      /**
+       * @param {Object} item
+       * @param {Object} dbItem
+       */
       let addTable = (item, dbItem) => {
         let id = dbItem.id = item.id + '.' + (item.children.length === 0 ? '1' : item.children.length + 1);
         item.children?.map((one) => {
@@ -369,10 +389,10 @@ export default {
      * 选中数据库链接的元素项
      */
     const focusLinkItem = () => {
-      if (asideData.focusItem.index > -1 && asideData.focusItem.item.id.indexOf('.') > -1) {
+      if (asideData.focusItem.index > -1 && (asideData.focusItem.item.id + '').indexOf('.') > -1) {
         let isNeed = false;
         if (asideData.focusItem?.item?.type == getActiveObj().option) {
-          return; ;
+          return;
         }
         mysqlCore.dbChildrenObj({id: '_'}).filter((one) => {
           if (one.type.split('.')[1] == getActiveObj().option) {

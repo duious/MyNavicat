@@ -28,18 +28,33 @@
   </div>
 </template>
 <script>
-import {reactive, computed, nextTick, watch, toRefs} from 'vue';
+import {reactive, nextTick, watch, toRefs} from 'vue';
 import TreeNode from './TreeNode.vue';
-
+const LINK_CLICK = 'linkClick';
+const DB_CLICK = 'dblclick';
+const LINK_CONTEXT_MENU = 'linkContextMenu';
+/**
+ * tree
+ * @description @Components {@link tree} 组件
+ * @description @:activeObj {@link treeArr} props:treeArr=[] 树结构数组
+ * @description @@optionClick {@link linkClick} linkClick(item, index, event) 左键点击菜单元素事件
+ * @description @@optionClick {@link dblclick} dblclick(item, index, event) 左键双击菜单元素事件
+ * @description @@optionClick {@link linkContextMenu} linkContextMenu(item, index, event) 右键点击菜单元素事件
+ */
 export default {
   props: {
     treeArr: {
       type: Array,
-      default: [],
+      default: Object.assign([], []),
       required: true,
     },
   },
   components: {TreeNode},
+  /**
+   * @param {Object} props 组件入参
+   * @param {Object} context 当前上下文方法
+   * @return {Object} Object
+   */
   setup (props, context) {
     const treeData = reactive({
       links: props.treeArr,
@@ -48,28 +63,28 @@ export default {
      * 左键单击链接元素
      * @param {Object} item 选中的元素
      * @param {Number} index 所在数组对应的下标
-     * @param {clickEvent} event 点击事件
+     * @param {Event} event 点击事件
      */
     const linkClick = (item, index, event) => {
-      context.emit('linkClick', item, index, event);
+      context.emit(LINK_CLICK, item, index, event);
     };
     /**
      * 左键双击链接元素
      * @param {Object} item 选中的元素
      * @param {Number} index 所在数组对应的下标
-     * @param {clickEvent} event 点击事件
+     * @param {Event} event 点击事件
      */
     const dblclick = (item, index, event) => {
-      context.emit('dblclick', item, index, event);
+      context.emit(DB_CLICK, item, index, event);
     };
     /**
      * 右键单击链接元素
      * @param {Object} item 选中的元素
      * @param {Number} index 所在数组对应的下标
-     * @param {clickEvent} event 点击事件
+     * @param {Event} event 点击事件
      */
     const linkContextMenu = (item, index, event) => {
-      context.emit('linkContextMenu', item, index, event);
+      context.emit(LINK_CONTEXT_MENU, item, index, event);
     };
     /**
      * 左键单击链接元素开合指示箭头
@@ -81,8 +96,17 @@ export default {
         item.state.open === false ? item.state.open = true : item.state.open = false;
         });
     };
+    /**
+     * 获取当前元素组的高度
+     * @param {Object} item 当前元素对象
+     * @return {String} 当前元素高度样式值
+     */
     const getHeight = (item) => {
       let height = item.children?.length * 24;
+      /**
+       * 拼接当前元素高度
+       * @param {Object} item 当前元素对象
+       */
       let concatHeight = (item) => {
         if (item.children?.length > 0) {
           item.children.filter((one) => one.state.open === true ? item : '')?.map((one) => {
@@ -95,7 +119,7 @@ export default {
       return item.state.open === false ? 0 : (height + 'px');
     };
     /**
-     * 自响应
+     * 自响应 数据更新
      */
     watch(() => props.treeArr, () => {
       treeData.links = props.treeArr;

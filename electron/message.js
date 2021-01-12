@@ -1,9 +1,14 @@
 const electron = require('electron');
 const BrowserWindow = electron.BrowserWindow;
+const {dialog} = electron;
 const ipcMain = electron.ipcMain;
 const setting = require('../setting.json');
 const {store, storeEnum} = require('./store');
 
+/**
+ * 消息操作目的地
+ * @type {{DIALOG: string, STORE: string}}
+ */
 const messageTypeEnum = {
   DIALOG: 'dialog',
   STORE: 'store',
@@ -20,6 +25,9 @@ ipcMain.on(setting.path.menu.open.path, (event, msg) => {
 ipcMain.on(setting.path.disk.get.path, (event, msg) => {
   messageHandel(setting.path.disk.get.path, event, msg);
 });
+ipcMain.on(setting.path.disk.choice.path, (event, msg) => {
+  messageHandel(setting.path.disk.choice.path, event, msg);
+});
 ipcMain.on(setting.path.disk.set.path, (event, msg) => {
   messageHandel(setting.path.disk.set.path, event, msg);
 });
@@ -27,10 +35,20 @@ ipcMain.on(setting.path.action.close.win.path, (event, msg) => {
   messageHandel(setting.path.action.close.win.path, event, msg);
 });
 
-function messageHandel (url, event, msg) {
+/**
+ * 消息处理
+ * @param {String} url
+ * @param {Event} event
+ * @param {Object} msg
+ */
+const messageHandel = (url, event, msg) => {
   url = url.split('/');
   // console.log('S:req:', msg);
-  let result = function (res) {
+  /**
+   * 处理结果
+   * @param {Object} res
+   */
+  const result = (res) => {
     res = {req: msg, res: res};
     console.log('S:res:', res);
     event.reply(msg.repUrl, res);
@@ -39,10 +57,10 @@ function messageHandel (url, event, msg) {
     // case setting.channel.SETTING:
     //   switch (msg.messages) {
     //     case setting.messages.SETTING.GET:
-    //       result(store.get(msg.key));
+    //       result(mysqlCore.get(msg.key));
     //       break;
     //     case setting.messages.SETTING.SET:
-    //       result(store.set(msg.key, msg.val));
+    //       result(mysqlCore.set(msg.key, msg.val));
     //       break;
     //     default:
     //       result({});
@@ -58,15 +76,23 @@ function messageHandel (url, event, msg) {
         case setting.path.disk.get.path:
           result(store.get(msg.params.key));
           break;
-        //     case setting.messages.STORE.DEL:
-        //       store.del(msg.key);
+        case setting.path.disk.choice.path:
+          new Promise((resolve, reject) => {
+            resolve(dialog.showOpenDialogSync(BrowserWindow.fromId(Number(msg.params.winId)), {
+              title: msg.params.title,
+              filters: msg.params.filters, properties: ['openFile'],
+            }));
+          }).then((res) => result(res));
+          break;
+          //     case setting.messages.STORE.DEL:
+        //       mysqlCore.del(msg.key);
         //       result({});
         //       break;
         //     case setting.messages.STORE.SIZE:
-        //       result({size: store.size()});
+        //       result({size: mysqlCore.size()});
         //       break;
         //     case setting.messages.STORE.CLEAR:
-        //       store.clear();
+        //       mysqlCore.clear();
         //       result({});
         //       break;
         //     default:
@@ -88,7 +114,7 @@ function messageHandel (url, event, msg) {
     //       BrowserWindow.fromId(Number(msg.id)).close();
     //       let res = {
     //         channel: setting.channel.STORE + '/' + 'tree',
-    //         res: store.get('link'),
+    //         res: mysqlCore.get('link'),
     //       }
     //       console.log('ipc:res:', res);
     //       result({});
@@ -168,15 +194,19 @@ function messageHandel (url, event, msg) {
       result({});
       break;
   }
-}
+};
 
-function sendMessages (msg) {
+/**
+ * 发送消息
+ * @param {Object} msg
+ */
+const sendMessages = (msg) => {
   const electron = require('electron');
   electron.ipcRenderer.sendToHost(msg.channel, {
     req: {channel: msg.channel},
     res: msg.res,
   });
-}
+};
 
 module.exports = sendMessages;
 

@@ -1,4 +1,4 @@
-const electron  = require('electron');
+const electron = require('electron');
 electron.ipcMain.on('get-all-fonts', (event, arg) => {
   try {
     require('font-list').getFonts().then((fonts) => {
@@ -6,14 +6,11 @@ electron.ipcMain.on('get-all-fonts', (event, arg) => {
         fonts = [];
       }
 
-      fonts = fonts.map((font) => {
-        return font.replace('"', '').replace('"', '');
-      });
+      fonts = fonts.map((font) => font.replace('"', '').replace('"', ''));
 
       event.sender.send('send-all-fonts', fonts);
     });
-  }
-  catch (e) {
-    event.sender.send('send-all-fonts', ["Default Initial"]);
+  } catch (e) {
+    event.sender.send('send-all-fonts', ['Default Initial']);
   }
 });

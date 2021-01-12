@@ -1,4 +1,3 @@
-const vue = require('vue');
 import setting from '../setting.json';
 import mitt from 'mitt';
 
@@ -14,6 +13,7 @@ const debug = false;
  * 消息总线 收发
  * @param {String} url 请求地址
  * @param {Object} params 请求参数
+ * @return {Promise}
  */
 message.send = (url, params) => new Promise((resolve, reject) => {
   // 发送前预检
@@ -40,13 +40,14 @@ message.send = (url, params) => new Promise((resolve, reject) => {
           '';
       resolve(res);
     });
-    try {
-      setTimeout(() => {
-        reject({code: -1, msg: '执行超时', req});
-      }, 3000);
-    } catch (e) {
-      console.error('C:warm:', req, '执行超时', e);
-    }
+    // todo
+    // try {
+    //   setTimeout(() => {
+    //     reject({code: -1, msg: '执行超时', req});
+    //   }, 30000);
+    // } catch (e) {
+    //   console.error('C:warm:', req, '执行超时', e);
+    // }
 }));
 
 /* 消息总线 收 */
@@ -81,7 +82,7 @@ ipcRenderer.on(setting.path.menu.close.db.path, (event, arg) => {
   emitMsg(setting.path.menu.close.db.path, arg, event);
 });
 /**
- *打开 选中的 表
+ * 打开 选中的 表
  */
 ipcRenderer.on(setting.path.menu.open.table.path, (event, arg) => {
   emitMsg(setting.path.menu.open.table.path, arg, event);
@@ -102,20 +103,14 @@ ipcRenderer.on(setting.path.action.edit.link.path, (event, arg) => {
  *更新 选中的 数据库链接
  */
 ipcRenderer.on(setting.path.action.update.link.path, (event, arg) => {
-  emitMsg(setting.path.action.edit.link.path, arg, event);
-});
-/**
- *更新 选中的 数据库链接
- */
-ipcRenderer.on(setting.path.action.update.link.path, (event, arg) => {
   emitMsg(setting.path.action.update.link.path, arg, event);
 });
 
 /**
  * 发送内部消息
- * @param url
- * @param req
- * @param event
+ * @param {String} url
+ * @param {Object} req
+ * @param {Event} event
  */
 function emitMsg (url, req, event) {
   debug ? console.info('S:rep:', req, JSON.parse(JSON.stringify(event))) : '';
@@ -143,9 +138,7 @@ function emitMsg (url, req, event) {
 // ipcRenderer.on(setting.channel.ACTION + '/' + 'openDB', (event, arg) => {
 //   eventHub.$emit(setting.channel.ACTION + '/' + 'openDB', arg.res);
 // });
-
 export let msg = message;
-
 export default {
   install: (app) => {
     message.app = app;

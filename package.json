@@ -19,17 +19,12 @@
     "et": "node_modules/.bin/et -m",
     "sign": "cd electron/mas; bash sign.sh"
   },
-  "dependencies": {
-    "monaco-editor": "^0.21.2",
-    "throttle-debounce": "^3.0.1",
-    "vue": "^3.0.2",
-    "vue-router": "^4.0.0-rc.5"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@vue/compiler-sfc": "^3.0.2",
-    "@vue/devtools": "^5.3.3",
-    "cross-env": "^5.2.0",
-    "electron": "^10.0.0",
+    "@vue/compiler-sfc": "^3.0.4",
+    "@vue/devtools": "^6.0.0-beta.2",
+    "cross-env": "^5.2.1",
+    "electron": "^10.1.6",
     "electron-builder": "^22.8.0",
     "electron-devtools-installer": "^3.1.1",
     "electron-store": "^6.0.0",
@@ -37,11 +32,17 @@
     "eslint": "^7.10.0",
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-vue": "^7.1.0",
+    "http-proxy":"^1.18.1",
+    "monaco-editor": "^0.21.2",
     "mitt": "^2.1.0",
     "mysql": "^2.18.1",
     "node-mysql": "^0.4.2",
     "sass": "1.26.10",
-    "vite": "^1.0.0-rc.9"
+    "ssh2": "^0.8.9",
+    "throttle-debounce": "^3.0.1",
+    "vite": "^1.0.0-rc.13",
+    "vue": "^3.0.4",
+    "vue-router": "^4.0.1"
   },
   "engines": {
     "node": ">= 14.0.0",

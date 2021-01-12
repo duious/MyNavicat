@@ -1,14 +1,23 @@
-'use strict'
+'use strict';
 // Template version: 1.3.1
 // see http://vuejs-templates.github.io/webpack for documentation.
 
-const path = require('path')
+const path = require('path');
 
 module.exports = {
   host: 'localhost',
   port: 9988,
-
-  sourcemap: true,
+  // 调试支持
+  // sourcemap: true,
+  // productionSourceMap: true,
+  // 压缩
+  minify: 'esbuild',
+  // 是否自动在浏览器打开
+  open: false,
+  // 是否开启 https
+  https: false,
+  // 服务端渲染
+  ssr: false,
 
   // 导入别名
   // 这些条目可以是精确的请求->请求映射*（精确，无通配符语法）
@@ -20,13 +29,13 @@ module.exports = {
   // ‘/@foo/‘: path.resolve(__dirname, ‘some-special-dir‘),
   // },
   // 配置Dep优化行为
-  optimizeDeps: {
-    // exclude: [‘dep-a‘, ‘dep-b‘],
-  },
+  // optimizeDeps: {
+  //   exclude: [‘dep-a‘, ‘dep-b‘],
+  // },
   // 转换Vue自定义块的功能。
-  vueCustomBlockTransforms: {
-    // i18n: src => `export default Comp => { ... }`,
-  },
+  // vueCustomBlockTransforms: {
+  //   i18n: src => `export default Comp => { ... }`,
+  // },
   // 为开发服务器配置自定义代理规则。
   proxy: {
     // proxy: {
@@ -39,4 +48,4 @@ module.exports = {
     // },
   },
   // ...
-}
+};

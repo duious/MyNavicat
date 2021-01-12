@@ -4,14 +4,14 @@
                v-if="'' !== component.header"
                :is="component.header"
                :activeObj="activeObj"
-               @optionClick="headerOptionClick"
+               @menuItemClick="headerOptionClick"
                :key="0 + '.' + component.header"></component>
     <div class="container" ref="containerEl">
       <component class="aside"
                  v-if="'' !== component.aside"
                  :is="component.aside"
                  :activeObj="activeObj"
-                 @optionClick="asideOptionClick"
+                 @linkItemClick="asideOptionClick"
                  :key="0 + '.' + component.aside"></component>
       <component class="main"
                  v-if="'' !== component.main"
@@ -32,28 +32,36 @@ const DEFAULT_ACTIVE = 'table';
 export default {
   name: 'index',
   components: {'Header': Header, 'Aside': Aside, 'Main': Main},
+  /**
+   * @return {Object} Object
+   */
   data () {
     return {
       activeObj: JSON.stringify({option: DEFAULT_ACTIVE, tab: DEFAULT_ACTIVE}),
       component: {header: '', aside: '', main: ''},
     };
   },
+  /**
+   */
   created () {
     let _this = this;
-    msg.send(setting.path.disk.get.path, {key: setting.disk.key.setting}).then((res) => {
-    });
+    msg.send(setting.path.disk.get.path, {key: setting.disk.key.setting}).then(() => {});
     _this.component.header = 'Header';
     _this.component.aside = 'Aside';
     _this.component.main = 'Main';
   },
   methods: {
+    /**
+     * @param {String} type header组件菜单点击事件-类型
+     * @param {Object} item header组件菜单点击事件菜单元素对象
+     */
     headerOptionClick (type, item) {
       let _this = this;
       switch (type) {
         /**
-           * 新链接调取原生菜单
-           * 新查询调取新地址建立新tab页
-           */
+         * 新链接调取原生菜单
+         * 新查询调取新地址建立新tab页
+         */
         case 'core':
           if (item.option === 'newLink') {
             msg.send(setting.path.menu.open.path, {params: setting.path.menu.open.params.newLink});
@@ -68,15 +76,27 @@ export default {
           break;
       }
     },
+    /**
+     * @param {String} type aside组件链接元素点击事件-类型
+     * @param {Object} item aside组件链接元素点击事件元素对象
+     */
     asideOptionClick (type, item) {
       let _this = this;
       let actObj = JSON.parse(_this.activeObj);
       delete actObj['asideData'];
       _this.setActiveObj(Object.assign(actObj, {option: type, tab: DEFAULT_ACTIVE, asideData: JSON.parse(JSON.stringify(item))}));
     },
+    /**
+     * 获取active对象
+     * @return {Object} activeObj active对象
+     */
     getActiveObj () {
       return JSON.parse(JSON.stringify(JSON.parse(this.activeObj)));
     },
+    /**
+     * 获取active对象
+     * @param {Object} obj active对象
+     */
     setActiveObj (obj) {
       this.activeObj = JSON.stringify(JSON.parse(JSON.stringify(obj)));
     },

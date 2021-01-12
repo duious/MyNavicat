@@ -252,7 +252,7 @@ const myStore = {
         linkItem.pool = '';
       }
       _store.dbArr = _store.dbArr.filter((one) => {
-        if (id !== one.id.split('.')[0]) {
+        if (id !== String.prototype.split.call(one.id, '.')[0]) {
           return one;
         }
       });
@@ -379,6 +379,8 @@ const myStore = {
         _store.tableArr[index] = item;
       }
     },
+
+    createConnection: (config) => mysql.createConnection(config),
   },
 };
 const deepCopy= (obj) => JSON.parse(JSON.stringify(obj));

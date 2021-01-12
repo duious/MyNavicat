@@ -19,8 +19,10 @@ function createWindow () {
     y: !isNaN(lastWinStage.y) ? lastWinStage.y : null,
     minWidth: 720,
     width: 720,
+    maxWidth: 720,
     minHeight: 640,
     height: 640,
+    maxHeight: 640,
     backgroundColor: '#00000000',
     useContentSize: false,
     title: setting.appName,
@@ -28,6 +30,9 @@ function createWindow () {
     autoHideMenuBar: true,
     type: 'textured',
     vibrancy: 'titlebar',
+    resizable: false,
+    maximizable: false,
+    fullscreenable: false,
     visualEffectState: 'followWindow',
     webPreferences: {
       nodeIntegration: true,
@@ -118,6 +123,7 @@ const menuItems = {
           params: {},
         };
         console.log('S:req:', req);
+        BrowserWindow.fromId(1).webContents.send(req.url, req);
       },
     }, {type: 'separator'},
     {
@@ -125,7 +131,7 @@ const menuItems = {
       click: async () => {
         createWindow();
         dialogWin.webContents.once('dom-ready', () => {
-          setTimeout(()=>{
+          setTimeout(() => {
             let res = {
               url: setting.path.action.edit.link.path,
               res: {item: store.get(TARGET_ITEM)},

@@ -67,10 +67,10 @@ const store = {
         }
       }
       myStore.set(setting.disk.key.link, linkArr);
-      console.log('S:store:del:', setting.disk.key.link, ':id:', key.split('.')[1]);
+      console.log('S:mysqlCore:del:', setting.disk.key.link, ':id:', key.split('.')[1]);
     } else {
       myStore.del(key);
-      console.log('S:store:del:', key);
+      console.log('S:mysqlCore:del:', key);
     }
   },
 
